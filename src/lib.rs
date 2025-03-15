@@ -7,8 +7,8 @@
 )]
 #![warn(missing_docs)]
 //! # rtwlib
-//! This is a simple and raytracing library, designed for simple use and modification, based on the books"Ray Tracing in One Weekend" and "Ray Tracing: the next week" by Peter Shirley.
-//! This isn't optimized for performance, so I would heavily reccomend only using it in situations where computation time isn't a concern.
+//! This is a simple and ray tracing library, designed for simple use and modification, based on the books"Ray Tracing in One Weekend" and "Ray Tracing: the next week" by Peter Shirley.
+//! This isn't optimized for performance, so I would heavily recommend only using it in situations where computation time isn't a concern.
 //! # Get started
 //! To render a scene, you need two things: a `Camera` and a scene, in the form of a `HittableList`.
 //! The following code creates a scene and camera, and renders the scene to a Vec<u8> containing the RGB values of the pixels.
@@ -33,7 +33,7 @@
 //! fn main() {
 //!     let mut world = HittableList::new();
 //!
-//!     let material = Rc::new(Lambertian::new(Color::new(0.3, 0.86, 0.1))); //create a new material with a vaugely green color
+//!     let material = Rc::new(Lambertian::new(Color::new(0.3, 0.86, 0.1))); //create a new material with a vaguely green color
 //!     let sphere = Sphere::new(Point3::new(0., 0., -1.), 0.5, material); //create a new sphere at 0, 0, -1 with a radius of 0.5, using the material we just created
 //!
 //!     world.add(sphere); //add the sphere to the world

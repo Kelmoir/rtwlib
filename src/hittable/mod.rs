@@ -1,13 +1,14 @@
 //! `Hittable` is a trait that is used to define objects that can be hit by rays, and `HittableList` represents a list of `Hittable` objects, or a scene.
 //! This module contains the hittable trait, and the hittable list struct, which is a collection of hittable objects.
 //! Any hittable object must implement the `Hittable` trait, which requires the `hit` function to be implemented, which determines if a ray hits the object.
-//! The `HittableList` struct is a collection of hittable objects, and implements the `Hittable` trait itself, allowing for nested collections of objects ( I dont see why you would need that ).
+//! The `HittableList` struct is a collection of hittable objects, and implements the `Hittable` trait itself, allowing for nested collections of objects ( I don't see why you would need that ).
 //!
 pub mod plane;
 pub mod sphere;
 use crate::{
     color::Color,
-    material::{Lambertian, Material},
+    material::Material,
+    material::lambertian::Lambertian,
     ray::Ray,
     vec3::*,
 };
@@ -122,7 +123,7 @@ impl Hittable for HittableList {
         return hit_anything;
     }
 }
-/// The `Hittable` trait is used to define objects that can be hit by rays, it would be implented by any object in a scene like a Sphere or Cube.
+/// The `Hittable` trait is used to define objects that can be hit by rays, it would be implemented by any object in a scene like a Sphere or Cube.
 pub trait Hittable: HittableClone {
     /// Determines if a ray hits the object, and modifies a [`HitRecord`] if it does.
     fn hit(&self, _r: &Ray, _ray_t: Range<f64>, _rec: &mut HitRecord) -> bool {

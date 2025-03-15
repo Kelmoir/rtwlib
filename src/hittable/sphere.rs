@@ -28,7 +28,7 @@ impl Sphere {
 
 impl Hittable for Sphere {
     fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
-        //ray sphere interesctions
+        //ray sphere intersections
         let oc = self.center - r.origin;
         let a = &r.direction.length_squared();
         let h = dot(&r.direction, &oc);
@@ -36,7 +36,7 @@ impl Hittable for Sphere {
         let discriminant = h * h - a * c;
 
         if discriminant < 0.0 {
-            //if it doesnt hit return false
+            //if it does not hit return false
             return false;
         }
 
@@ -51,7 +51,7 @@ impl Hittable for Sphere {
             }
         }
 
-        //callculates:
+        //calculates:
         rec.t = root; //how far along the ray the hit was
         rec.p = r.at(rec.t); // hit point
         let outward_normal = (rec.p - self.center) / self.radius; //normals

@@ -38,7 +38,7 @@ impl Plane {
 
 impl Hittable for Plane {
     fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
-        // this took me like 2 hours, dont screw around with it too much.
+        // this took me like 2 hours, don't screw around with it too much.
         let denom = dot(&self.normal, &r.direction);
         if denom.abs() > 1e-4 {
             let t = dot(&(self.origin - r.origin), &self.normal) / denom;
