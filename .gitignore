@@ -1,0 +1,7 @@
+/target
+/images
+.DS_Store
+.vscode
+*.ppm
+*.lock
+Cargo.lock
