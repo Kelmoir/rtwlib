@@ -22,6 +22,7 @@ impl Material for Normal {
         rec: &HitRecord,
         attenuation: &mut Color,
         scattered: &mut Ray,
+        _last_material: &Box<dyn Material>,
     ) -> bool {
         let scatter_direction = rec.normal + (Vec3::random_normalized());
         *scattered = Ray::new(rec.p, scatter_direction);

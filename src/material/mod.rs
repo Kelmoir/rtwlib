@@ -5,18 +5,21 @@
 //! - [`Lambertian`]: A diffuse material, effectively reflects light in a random direction, with a color determined by the albedo.
 //! - [`Normal`]: A material that colors the object based on the normal vector at the hit point, mostly a joke, just a fancy colored lambertian.
 //! - [`Metal`]: A material that reflects light. The reflectance is determined by the fuzziness of the material, with higher
-use std::fmt::Debug;
 
+use std::fmt::Debug;
 use crate::{color::Color, hittable::HitRecord, ray::Ray};
+
 pub mod lambertian;
 pub mod metal;
 pub mod normal;
 pub mod dielectric;
+pub mod ir_dielectric;
 
 pub use lambertian::Lambertian;
 pub use metal::Metal;
 pub use normal::Normal;
 pub use dielectric::Dielectric;
+pub use ir_dielectric::IrDielectric;
 
 /// A `Material` is a trait that represents a material that can be applied to an object. This requires the `scatter` function to be implemented, which describes how the material scatters an incoming ray.
 ///
@@ -33,6 +36,7 @@ pub trait Material: Debug {
         _rec: &HitRecord,
         _attenuation: &mut Color,
         _scattered: &mut Ray,
+        _last_material: &Box<dyn Material>,
     ) -> bool {
         false
     }
@@ -40,4 +44,12 @@ pub trait Material: Debug {
     fn as_string(&self) -> String {
         format!("{:?}", self)
     }
+    /// This performs any absorption that happened between the last and the current hit
+    fn perform_absorption(
+        &self,
+        _relevant_ray: &Ray,
+        _attenuation: &mut Color,
+        _last_hit: &HitRecord,
+    )
+    {}
 }

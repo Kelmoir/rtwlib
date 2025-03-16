@@ -27,6 +27,7 @@ impl Material for Metal {
         rec: &HitRecord,
         attenuation: &mut Color,
         scattered: &mut Ray,
+        _last_material: &Box<dyn Material>,
     ) -> bool {
         let reflected: Vec3 = r_in.direction.reflect(&rec.normal);
         let reflected = reflected.normalized() + Vec3::random_normalized() * self.fuzz;

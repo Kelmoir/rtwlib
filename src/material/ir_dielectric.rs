@@ -1,23 +1,32 @@
-///! A dielectric material, refracts light, basically glass.
 
+///! A dielectric material, refracts light, basically glass.
 use rand::Rng;
 use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::*, material::Material};
 
+type DataPoint = (i32, i32);
+type Graph = Vec<DataPoint>;
+
+
 #[derive(Debug)]
 /// A dielectric material, refracts light, basically glass.
-pub struct Dielectric {
-    ior: f64,
+pub struct IrDielectric {
+    optical_density: f64,
+    ///This describes the absorption spectrum of the Dielectric in a(l)/cm^-1
+    absorption_spectrum: Graph,
 }
 
-impl Dielectric {
+impl IrDielectric {
     /// Creates a new `Dielectric` material with the given index of refraction.
-    pub fn new(ior: f64) -> Self {
-        Dielectric { ior }
+    pub fn new(optical_density: f64, absorption_spectrum:Graph) -> Self {
+        IrDielectric { 
+            optical_density , 
+            absorption_spectrum
+        }
     }
 }
 
 
-impl Material for Dielectric {
+impl Material for IrDielectric {
     fn scatter(
         &self,
         r_in: &Ray,
@@ -29,9 +38,9 @@ impl Material for Dielectric {
         *attenuation = Color::new(1., 1., 1.);
 
         let ri: f64 = if rec.front_face {
-            1.0 / self.ior
+            1.0 / self.optical_density
         } else {
-            self.ior
+            self.optical_density
         };
 
         let unit_direction = r_in.direction.normalized();

@@ -17,7 +17,7 @@
 //! From here, you can do whatever you want with the color, save it to a buffer, write it to a file, or even display it immediately on screen.
 //!
 //! Cameras can have
-use crate::{color::*, hittable::*, ray::*, vec3::*};
+use crate::{color::*, hittable::*, material::{Dielectric, Material}, ray::*, vec3::*};
 use rand::{thread_rng, Rng};
 
 /// #Camera
@@ -87,6 +87,8 @@ pub struct Camera {
     w: Vec3,
     defocus_disc_u: Vec3,
     defocus_disc_v: Vec3,
+    /// The material, the scene is filled with, before accounting for any other items.
+    pub filler_material: Box<dyn Material>,
     /// The sky object, used to render the background of the scene
     pub sky: Box<dyn Sky>,
 }
@@ -159,8 +161,8 @@ impl Camera {
         }
         buffer
     }
-    /// Initalizes camera settings based on current properties.
-    /// This should be run any time the resolution, location, lookat, sample count, focus amount or focus distance is changed.
+    /// Initializes camera settings based on current properties.
+    /// This should be run any time the resolution, location, look at, sample count, focus amount or focus distance is changed.
     pub fn initialize(&mut self) {
         //image size
         self.aspect_ratio = self.image_width as f64 / self.image_height as f64;
@@ -193,7 +195,7 @@ impl Camera {
     }
 
     /// Creates an initial ray targeting pixel (i, j)
-    /// The rays are slightly jittered, to acheive proper multi-sample averages.
+    /// The rays are slightly jittered, to achieve proper multi-sample averages.
     /// * `i`, `j` - The target pixel
     pub fn get_ray(&self, i: u32, j: u32) -> Ray {
         //creates rays from defocus disk pointing at a random point in pixel i, j
@@ -212,7 +214,7 @@ impl Camera {
     pub fn get_distance(&self, target: Point3) -> f64 {
         (target - self.lookfrom).length()
     }
-    /// Return's the canera's sample scale, Should generally be used as opposed to acessing the value directly, as it should not be modified mid-trace.
+    /// Return's the cameras sample scale, Should generally be used as opposed to accessing the value directly, as it should not be modified mid-trace.
     pub fn get_sample_scale(&self) -> f64 {
         self.sample_scale
     }
@@ -234,7 +236,7 @@ impl Camera {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
             let mut attenuation = Color::from(1.);
 
-            if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered) {
+            if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered, &self.filler_material) {
                 //does bounce/scattter for materials of hit object
                 return attenuation * self.ray_color(scattered, bounces - 1, world);
             }
@@ -275,6 +277,7 @@ impl Default for Camera {
             w: Vec3::from(0.0),
             defocus_disc_u: Vec3::from(0.0),
             defocus_disc_v: Vec3::from(0.0),
+            filler_material: Box::new(Dielectric::new(1.0)), //Per default, we fill the scene with nothing, as in vacuum
             sky: Box::new(GradientSky {
                 start: Color::new(0.5, 0.7, 1.0),
                 end: Color::new(1.0, 1.0, 1.0),
@@ -288,7 +291,7 @@ fn sample_square() -> Vec3 {
     let mut rng = thread_rng();
     Vec3::new(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0), 0.)
 }
-/// Creates a point somehwere in the area of the camera's virtual "lens", used to simulate DOF
+/// Creates a point somewhere in the area of the camera's virtual "lens", used to simulate DOF
 fn defocus_disk_sample(cam: &Camera) -> Point3 {
     let p = Vec3::random_in_unit_disk();
     cam.center + (p.x * cam.defocus_disc_u) + (p.y * cam.defocus_disc_v)
@@ -304,6 +307,7 @@ pub trait Sky: SkyClone {
 
 /// A trait to allow cloning of a `Sky` object, its useful.
 pub trait SkyClone {
+    /// This will clone itself and return a new Box<dyn Sky>
     fn clone_box(&self) -> Box<dyn Sky>;
 }
 
