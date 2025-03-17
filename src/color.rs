@@ -1,4 +1,4 @@
-//! This module contans all functions and structs related to colors and color manipulation.
+//! This module contains all functions and structs related to colors and color manipulation.
 //! This includes the `Color` struct, an alias for `Vec3`, and functions to convert colors to different formats, as well as color manipulation functions such as gamma correction.
 use crate::vec3::Vec3;
 

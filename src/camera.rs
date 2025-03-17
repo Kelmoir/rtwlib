@@ -2,7 +2,7 @@
 //! The functions are here to provide a simple way to render a scene, but feel free to implement your own methods on the `Camera` struct to render to different outputs.
 //!
 //! # Example
-//! To render a scene, you can simply use one of the premade renderers, like `render_to_bytes` or `render_to_string`, these have a callback function that is called every line, which can be used to show progress.
+//! To render a scene, you can simply use one of the pre made renderers, like `render_to_bytes` or `render_to_string`, these have a callback function that is called every line, which can be used to show progress.
 //! ```
 //! use rtwlib::{camera::Camera, hittable::*, material::*, vec3::*};
 //!
@@ -10,8 +10,8 @@
 //! ```
 //!
 //! If you want more control over your renders, the `get_ray` and `ray_color` functions are the backbone of the rendering process, and can be used to create your own rendering functions.
-//! When rendering manually ( without a premade function ) the generall process is as follows:
-//!     1. Initalize the camera for rendering using `initialize`.
+//! When rendering manually ( without a pre made function ) the general process is as follows:
+//!     1. Initialize the camera for rendering using `initialize`.
 //!     2. Create a `Ray` using `get_ray` with the pixel coordinates.
 //!     3. Trace the ray using `ray_color` to get the color of the pixel.
 //! From here, you can do whatever you want with the color, save it to a buffer, write it to a file, or even display it immediately on screen.
@@ -25,7 +25,7 @@ use rand::{thread_rng, Rng};
 /// Represents the Camera rendering the scene. It contains a position, target, up vector and all other rendering settings.
 /// Implements the `Default` trait, so you can create a new camera with `Camera::new()`.
 ///
-/// The public feilds can be modified directly, but you should call `initialize` after changing any settings to ensure the camera is properly set up. the pre-made render functions will call `initialize` automatically.
+/// The public fields can be modified directly, but you should call `initialize` after changing any settings to ensure the camera is properly set up. the pre-made render functions will call `initialize` automatically.
 ///
 /// # Fields
 /// Public:
