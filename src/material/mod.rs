@@ -14,12 +14,14 @@ pub mod metal;
 pub mod normal;
 pub mod dielectric;
 pub mod ir_dielectric;
+pub mod perfect_mirror;
 
 pub use lambertian::Lambertian;
 pub use metal::Metal;
 pub use normal::Normal;
 pub use dielectric::Dielectric;
 pub use ir_dielectric::IrDielectric;
+pub use perfect_mirror::PerfectMirror;
 
 /// A `Material` is a trait that represents a material that can be applied to an object. This requires the `scatter` function to be implemented, which describes how the material scatters an incoming ray.
 ///
