@@ -6,7 +6,7 @@
 pub mod plane;
 pub mod sphere;
 use crate::{
-    color::Color,
+    color::RgbColor,
     material::Material,
     material::lambertian::Lambertian,
     ray::Ray,
@@ -66,7 +66,7 @@ impl Default for HitRecord {
         HitRecord {
             p: Point3::from(0.0),
             normal: Vec3::from(0.0),
-            mat: Rc::new(Lambertian::new(Color::from(0.5))),
+            mat: Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.5)))),
             t: 0.0,
             front_face: false,
         }

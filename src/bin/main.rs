@@ -1,10 +1,9 @@
 use plane::Plane;
 use rtwlib::camera::*;
-use rtwlib::color::Color;
+use rtwlib::color::RgbColor;
 use rtwlib::hittable::*;
-use rtwlib::material::*;
-//use rand::Rng;
 use rtwlib::hittable::sphere::*;
+use rtwlib::material::Lambertian;
 use rtwlib::vec3::*;
 use std::rc::Rc;
 use std::{fs::File, io::Write};
@@ -14,13 +13,13 @@ fn main() -> std::io::Result<()> {
         objects: Vec::new(),
     };
     //create the materials
-    let mat_r = Rc::new(Lambertian::new(Color::new(1, 0, 0)));
-    let mat_o = Rc::new(Lambertian::new(Color::new(1., 0.5, 0.)));
-    let mat_y = Rc::new(Lambertian::new(Color::new(1., 1., 0.)));
-    let mat_g = Rc::new(Lambertian::new(Color::new(0, 1, 0)));
-    let mat_b = Rc::new(Lambertian::new(Color::new(0, 0, 1)));
-    let mat_v = Rc::new(Lambertian::new(Color::new(0.8, 0.3, 0.8)));
-    let mat_ground = Rc::new(Lambertian::new(Color::new(0.9, 0.9, 0.9)));
+    let mat_r = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1, 0, 0))));
+    let mat_o = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1., 0.5, 0.))));
+    let mat_y = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1., 1., 0.))));
+    let mat_g = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0, 1, 0))));
+    let mat_b = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0, 0, 1))));
+    let mat_v = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0.8, 0.3, 0.8))));
+    let mat_ground = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0.9, 0.9, 0.9))));
     //add spheres to the world
     world.add(Sphere::new(Point3::new(0., 0., 2.5), 0.5, mat_r));
     world.add(Sphere::new(Point3::new(0., 0., 1.5), 0.5, mat_o));

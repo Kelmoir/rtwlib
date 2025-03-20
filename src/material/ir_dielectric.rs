@@ -1,7 +1,9 @@
 
+use std::rc::Rc;
+
 ///! A dielectric material, refracts light, basically glass.
 use rand::Rng;
-use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::*, material::Material};
+use crate::{color::{Color, RgbColor}, hittable::HitRecord, material::Material, ray::Ray, vec3::*};
 
 type DataPoint = (i32, i32);
 type Graph = Vec<DataPoint>;
@@ -31,11 +33,11 @@ impl Material for IrDielectric {
         &self,
         r_in: &Ray,
         rec: &HitRecord,
-        attenuation: &mut Color,
+        attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
         _last_material: &Box<dyn Material>,
     ) -> bool {
-        *attenuation = Color::new(1., 1., 1.);
+        *attenuation = Rc::new(RgbColor::new(1., 1., 1.));
 
         let ri: f64 = if rec.front_face {
             1.0 / self.optical_density
@@ -62,7 +64,7 @@ impl Material for IrDielectric {
     fn perform_absorption(
         &self,
         _relevant_ray: &Ray,
-        _attenuation: &mut Color,
+        _attenuation: &mut Rc<dyn Color>,
         _last_hit: &HitRecord,
     )
     {}

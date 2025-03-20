@@ -6,15 +6,22 @@
 //! - [`Normal`]: A material that colors the object based on the normal vector at the hit point, mostly a joke, just a fancy colored lambertian.
 //! - [`Metal`]: A material that reflects light. The reflectance is determined by the fuzziness of the material, with higher
 
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 use crate::{color::Color, hittable::HitRecord, ray::Ray};
 
+/// A diffuse material, effectively reflects light in a random direction, with a color determined by the albedo.
 pub mod lambertian;
+/// A material that reflects light. The reflectance is determined by the fuzziness of the material, with higher
 pub mod metal;
+/// A material that reflects light. The reflectance is determined by the fuzziness of the material, with higher
 pub mod normal;
+/// Dielectric material, that can refract ans scatter rays, like glass
 pub mod dielectric;
+/// Dielectric material, adjusted for the needs of IR tracking
 pub mod ir_dielectric;
+/// A perfect mirror
 pub mod perfect_mirror;
+/// Absorbs all rays, but stores, where it received it and how much it received in total
 pub mod detector;
 
 pub use lambertian::Lambertian;
@@ -38,7 +45,7 @@ pub trait Material: Debug {
         &self,
         _r_in: &Ray,
         _rec: &HitRecord,
-        _attenuation: &mut Color,
+        _attenuation: &mut Rc<dyn Color>,
         _scattered: &mut Ray,
         _last_material: &Box<dyn Material>,
     ) -> bool {
@@ -52,7 +59,7 @@ pub trait Material: Debug {
     fn perform_absorption(
         &self,
         _relevant_ray: &Ray,
-        _attenuation: &mut Color,
+        _attenuation: &mut Rc<dyn Color>,
         _last_hit: &HitRecord,
     )
     {}

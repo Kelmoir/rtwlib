@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 /// Almost Identical to the lambertian, but the color is dynamically determined by the normal vector at the hit point.
 
-use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::*, material::Material};
+use crate::{color::{Color, RgbColor}, hittable::HitRecord, material::Material, ray::Ray, vec3::*};
 
 #[derive(Debug)]
 /// Almost Identical to the lambertian, but the color is dynamically determined by the normal vector at the hit point.
@@ -20,13 +22,13 @@ impl Material for Normal {
         &self,
         _r_in: &Ray,
         rec: &HitRecord,
-        attenuation: &mut Color,
+        attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
         _last_material: &Box<dyn Material>,
     ) -> bool {
         let scatter_direction = rec.normal + (Vec3::random_normalized());
         *scattered = Ray::new(rec.p, scatter_direction);
-        *attenuation = Color::new(rec.normal.x, rec.normal.y, rec.normal.z);
+        *attenuation = Rc::new(RgbColor::new(rec.normal.x, rec.normal.y, rec.normal.z));
         false
     }
 }

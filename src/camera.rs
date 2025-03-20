@@ -17,6 +17,8 @@
 //! From here, you can do whatever you want with the color, save it to a buffer, write it to a file, or even display it immediately on screen.
 //!
 //! Cameras can have
+use std::{ops::Mul, rc::Rc};
+
 use crate::{color::*, hittable::*, material::{Dielectric, Material}, ray::*, vec3::*};
 use rand::{thread_rng, Rng};
 
@@ -104,7 +106,7 @@ impl Camera {
     /// * `world` - The HittableList representing the scene
     /// * `progress` - A callback function with u32 parameter.
     ///
-    /// Returns a `String` containing the rgb values for each pixel, each value seperated by a space, and each pixel seperated by a newline.
+    /// Returns a `String` containing the rgb values for each pixel, each value separated by a space, and each pixel separated by a newline.
     ///
     /// `R G B\n
     /// R G B\n
@@ -120,7 +122,7 @@ impl Camera {
 
         for j in 0..self.image_height {
             for i in 0..self.image_width {
-                let mut pixel_color = Color::from(0.0);
+                let mut pixel_color = RgbColor::from(0.0);
 
                 for _ in 0..self.samples {
                     let r = self.get_ray(i, j);
@@ -149,7 +151,7 @@ impl Camera {
 
         for j in 0..=self.image_height - 1 {
             for i in 0..=self.image_width - 1 {
-                let mut pixel_color = Color::from(0.0);
+                let mut pixel_color = RgbColor::from(0.0);
 
                 for _ in 0..self.samples {
                     let r = self.get_ray(i, j);
@@ -223,25 +225,25 @@ impl Camera {
     /// * `r` - The `Ray` to be traced.
     /// * `bounces` - The maximum depth of the trace.
     /// * `world` - A HittableList of objects, representing the scene.
-    pub fn ray_color(&self, r: Ray, bounces: u32, world: &HittableList) -> Color {
+    pub fn ray_color(&self, r: Ray, bounces: u32, world: &HittableList) -> RgbColor {
         //actually traces the
         //ray
         if bounces == 0 {
-            return Color::from(0.);
+            return RgbColor::from(0.);
         }
 
         let mut rec: HitRecord = Default::default();
 
         if world.hit(&r, 0.001..f64::INFINITY, &mut rec) {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
-            let mut attenuation = Color::from(1.);
+            let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::from(1.));
 
             if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered, &self.filler_material) {
-                //does bounce/scattter for materials of hit object
-                return attenuation * self.ray_color(scattered, bounces - 1, world);
+                //does bounce/scatter for materials of hit object
+                return attenuation.mul_vec3(self.ray_color(scattered, bounces - 1, world));
             }
 
-            return Color::new(0., 0., 0.); // Show up around the edge of metals
+            return RgbColor::new(0., 0., 0.); // Show up around the edge of metals
         }
 
         // if the ray hits nothing, calculates a sky color
@@ -279,8 +281,8 @@ impl Default for Camera {
             defocus_disc_v: Vec3::from(0.0),
             filler_material: Box::new(Dielectric::new(1.0)), //Per default, we fill the scene with nothing, as in vacuum
             sky: Box::new(GradientSky {
-                start: Color::new(0.5, 0.7, 1.0),
-                end: Color::new(1.0, 1.0, 1.0),
+                start: RgbColor::new(0.5, 0.7, 1.0),
+                end: RgbColor::new(1.0, 1.0, 1.0),
             }),
         }
     }
@@ -341,12 +343,12 @@ impl Clone for Box<dyn Sky> {
 #[derive(Clone)]
 pub struct GradientSky {
     /// The color at the top of the sky
-    pub start: Color,
+    pub start: RgbColor,
     /// The color at the bottom of the sky
-    pub end: Color,
+    pub end: RgbColor,
 }
 
-impl Sky for Color {
+impl Sky for RgbColor {
     fn color(&self, _direction: Ray) -> Vec3 {
         *self
     }

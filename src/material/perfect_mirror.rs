@@ -1,6 +1,7 @@
 ///! A perfect mirror, which will always reflect, add no fuzz or color to the ray
 
-use crate::{color::Color, hittable::HitRecord, ray::Ray, vec3::*, material::Material};
+use crate::{color::Color, hittable::HitRecord, material::Material, ray::Ray, vec3::*};
+use std::rc::Rc;
 
 #[derive(Debug)]
 /// A perfect mirror, which will always reflect, add no fuzz or color to the ray
@@ -19,7 +20,7 @@ impl Material for PerfectMirror {
         &self,
         r_in: &Ray,
         rec: &HitRecord,
-        _attenuation: &mut Color,
+        _attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
         _last_material: &Box<dyn Material>,
     ) -> bool {
