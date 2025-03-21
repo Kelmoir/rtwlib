@@ -1,32 +1,80 @@
+use std::{f64::consts::E, rc::Rc};
 
-use std::rc::Rc;
-
+use crate::{
+    color::{Color, RgbColor},
+    hittable::HitRecord,
+    material::Material,
+    ray::Ray,
+    vec3::*,
+};
 ///! A dielectric material, refracts light, basically glass.
 use rand::Rng;
-use crate::{color::{Color, RgbColor}, hittable::HitRecord, material::Material, ray::Ray, vec3::*};
 
-type DataPoint = (i32, i32);
+///This describes the absorption spectrum of the Dielectric in (wavelength, a(l)/cm^-1)
+type DataPoint = (f64, f64);
 type Graph = Vec<DataPoint>;
-
 
 #[derive(Debug)]
 /// A dielectric material, refracts light, basically glass.
 pub struct IrDielectric {
     optical_density: f64,
-    ///This describes the absorption spectrum of the Dielectric in a(l)/cm^-1
+    ///This describes the absorption spectrum of the Dielectric in
     absorption_spectrum: Graph,
 }
 
 impl IrDielectric {
     /// Creates a new `Dielectric` material with the given index of refraction.
-    pub fn new(optical_density: f64, absorption_spectrum:Graph) -> Self {
-        IrDielectric { 
-            optical_density , 
-            absorption_spectrum
+    pub fn new(optical_density: f64, absorption_spectrum: Graph) -> Self {
+        IrDielectric {
+            optical_density,
+            absorption_spectrum,
         }
     }
-}
+    /// Gets the absorption coefficient for a given wavelength
+    fn get_absorption_coefficient_for_wavelength(&self, wavelength: f64) -> f64 {
+        // Binary search to find the closest wavelength points
+        let mut left = 0;
+        let mut right = self.absorption_spectrum.len() - 1;
 
+        // Handle edge cases
+        if self.absorption_spectrum.is_empty() {
+            return 0.0;
+        }
+        if wavelength <= self.absorption_spectrum[0].0 {
+            return self.absorption_spectrum[0].1;
+        }
+        if wavelength >= self.absorption_spectrum[right].0 {
+            return self.absorption_spectrum[right].1;
+        }
+
+        // Binary search
+        while left + 1 < right {
+            let mid = (left + right) / 2;
+            let mid_wavelength = self.absorption_spectrum[mid].0;
+
+            if mid_wavelength == wavelength {
+                return self.absorption_spectrum[mid].1;
+            } else if mid_wavelength < wavelength {
+                left = mid;
+            } else {
+                right = mid;
+            }
+        }
+
+        // Linear interpolation between the two closest points
+        let (x0, y0) = self.absorption_spectrum[left];
+        let (x1, y1) = self.absorption_spectrum[right];
+
+        let t = (wavelength - x0) / (x1 - x0);
+        y0 + t * (y1 - y0)
+    }
+    /// Evaluates the absorption of the material at a given distance
+    fn evaluate_absorption(&self, distance: f64, wavelength: f64) -> f64 {
+        // Calculate absorption based on Beer-Lambert law
+        // A = e^(-alpha * distance)
+        E.powf(-self.get_absorption_coefficient_for_wavelength(wavelength) * distance)
+    }
+}
 
 impl Material for IrDielectric {
     fn scatter(
@@ -64,10 +112,13 @@ impl Material for IrDielectric {
     fn perform_absorption(
         &self,
         _relevant_ray: &Ray,
-        _attenuation: &mut Rc<dyn Color>,
+        attenuation: &mut Rc<dyn Color>,
         _last_hit: &HitRecord,
-    )
-    {}
+    ) {
+        let distance = _last_hit.t;
+        let absorption = self.evaluate_absorption(distance, attenuation.to_wavelength());
+        *attenuation = attenuation.mul_scalar(absorption);
+    }
 }
 
 //schlick approximation for reflectance at grazing angles
