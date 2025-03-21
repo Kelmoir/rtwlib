@@ -1,7 +1,7 @@
 //! This module contains all functions and structs related to colors and color manipulation.
 //! This includes the `Color` struct, an alias for `Vec3`, and functions to convert colors to different formats, as well as color manipulation functions such as gamma correction.
 use crate::vec3::Vec3;
-
+use std::rc::Rc;
 use super::Color;
 
 ///Converts a linear color value to a gamma corrected value.
@@ -42,18 +42,35 @@ impl Color for RgbColor {
 
         let intensity = (0.0, 0.999);
         //convert colors from 0-1 f64 range to 8 bit integer (0-255)
-        let rbyte = (export_colors.x.clamp(intensity.0, intensity.1) * 255.0) as u8;
-        let gbyte = (export_colors.y.clamp(intensity.0, intensity.1) * 255.) as u8;
-        let bbyte = (export_colors.z.clamp(intensity.0, intensity.1) * 255.) as u8;
+        let r_byte = (export_colors.x.clamp(intensity.0, intensity.1) * 255.0) as u8;
+        let g_byte = (export_colors.y.clamp(intensity.0, intensity.1) * 255.) as u8;
+        let b_byte = (export_colors.z.clamp(intensity.0, intensity.1) * 255.) as u8;
 
-        [rbyte, gbyte, bbyte]
+        [r_byte, g_byte, b_byte]
     }
 
+    /// Multiplies this color by a vector, used for color attenuation during ray tracing
     fn mul_vec3(&self, other: Vec3) -> Vec3 {
         *self * other
     }
-}
 
+    /// Divides this color by a scalar, used for color attenuation during ray tracing
+    fn div_scalar(&self, other: f64) -> Rc<dyn Color>  {  
+        Rc::new(RgbColor::new(self.x / other, self.y / other, self.z / other))
+    }
+
+    /// Multiplies this color by a scalar, used for color attenuation during ray tracing
+    fn mul_scalar(&self, other: f64) -> Rc<dyn Color> {
+        Rc::new(RgbColor::new(self.x * other, self.y * other, self.z * other))
+    }
+
+    /// Multiplies this color by a scalar, used for color attenuation during ray tracing
+    fn mul_scalar_in_place(&mut self, other: f64) {
+        self.x *= other;
+        self.y *= other;
+        self.z *= other;
+    }
+}
 impl RgbColor {
     ///Converts a color to a hexadecimal string, starting with a `#`.
     pub fn to_hex(&self) -> String {
