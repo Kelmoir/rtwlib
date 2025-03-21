@@ -35,9 +35,11 @@ pub struct HitRecord {
 /// use rtwlib::sphere::Sphere;
 /// use rtwlib::vec3::Point3;
 /// use rtwlib::material::Lambertian;
-///
+/// use rtwlib::color::RgbColor;
+/// use std::rc::Rc;
+/// 
 /// let mut world = HittableList::new();
-/// let material = Rc::new(Lambertian::new(Color::from(0.3)));
+/// let material = Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.3))));
 /// let sphere = Sphere::new(Point3::from(0.0), 0.5, material);
 /// world.add(sphere);
 pub struct HittableList {
