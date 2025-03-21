@@ -5,7 +5,12 @@
 //! To render a scene, you can simply use one of the pre made renderers, like `render_to_bytes` or `render_to_string`, these have a callback function that is called every line, which can be used to show progress.
 //! ```
 //! use rtwlib::{camera::Camera, hittable::*, material::*, vec3::*};
-//!
+//! use rtwlib::color::RgbColor;
+//! use std::rc::Rc;
+//! 
+//! let mut world = HittableList::new();
+//! 
+//! let mut camera = Camera::new();
 //! camera.render_to_bytes(world, |progress| println!("Progress: {}%", progress));
 //! ```
 //!
@@ -17,7 +22,7 @@
 //! From here, you can do whatever you want with the color, save it to a buffer, write it to a file, or even display it immediately on screen.
 //!
 //! Cameras can have
-use std::{ops::Mul, rc::Rc};
+use std::rc::Rc;
 
 use crate::{color::*, hittable::*, material::{Dielectric, Material}, ray::*, vec3::*};
 use rand::{thread_rng, Rng};
@@ -66,7 +71,7 @@ pub struct Camera {
     pub samples: u32,
     /// The maximum number of times a ray can bounce before being terminated
     pub bounces: u32,
-    /// The feild of view of the camera
+    /// The field of view of the camera
     pub vfov: f64,
     /// The location of the camera
     pub lookfrom: Point3,
@@ -96,7 +101,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    /// Creates and initalizes a new default camera
+    /// Creates and initializes a new default camera
     pub fn new() -> Camera {
         let mut cam = Camera::default();
         cam.initialize();
@@ -333,11 +338,11 @@ impl Clone for Box<dyn Sky> {
 /// Example:
 /// ```
 /// use rtwlib::camera::GradientSky;
-/// use rtwlib::color::Color;
+/// use rtwlib::color::RgbColor;
 /// use rtwlib::vec3::Vec3;
 /// let sky = GradientSky {
-///     start: Color::new(0.5, 0.7, 1.0),
-///     end: Color::new(1.0, 1.0, 1.0),
+///     start: RgbColor::new(0.5, 0.7, 1.0),
+///     end: RgbColor::new(1.0, 1.0, 1.0),
 /// };
 /// ```
 #[derive(Clone)]

@@ -41,6 +41,10 @@
 //!     ...
 //! //
 pub mod camera;
+/// # Color
+/// This module contains the `RgbColor` and `FreqPowerColor` structs, which are used to represent colors in different ways.
+/// `RgbColor` is a color that is represented by a red, green, and blue value, used for most colors.
+/// `FreqPowerColor` is a color that is represented by a frequency and power, used for light wavelengths.
 pub mod color;
 pub mod hittable;
 pub mod material;

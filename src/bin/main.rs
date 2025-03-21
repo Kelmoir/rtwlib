@@ -37,7 +37,7 @@ fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let mut file = File::create(args[1].to_string())?;
 
-    //create a new cam, and set relavant settings.
+    //create a new cam, and set relevant settings.
     let mut cam = Camera::new();
     cam.image_width = 1600;
     cam.image_height = 900;
@@ -68,12 +68,12 @@ fn main() -> std::io::Result<()> {
 
 // Simple progress callback function
 fn update_progress(progress: u32, lines: u32) {
-    let strwidth = lines.to_string().len();
+    let stream_width = lines.to_string().len();
     print!(
         "\r{:0width$}/{} lines rendered",
         progress,
         lines,
-        width = strwidth
+        width = stream_width
     );
     std::io::stdout().flush().unwrap();
 }
