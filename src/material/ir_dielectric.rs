@@ -116,7 +116,7 @@ impl Material for IrDielectric {
         _last_hit: &HitRecord,
     ) {
         let distance = _last_hit.t;
-        let absorption = self.evaluate_absorption(distance, attenuation.to_wavelength());
+        let absorption = self.evaluate_absorption(distance, attenuation.get_wavelength());
         *attenuation = attenuation.mul_scalar(absorption);
     }
 }

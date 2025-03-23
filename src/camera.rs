@@ -245,7 +245,7 @@ impl Camera {
 
             if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered, &self.filler_material) {
                 //does bounce/scatter for materials of hit object
-                return attenuation.mul_vec3(self.ray_color(scattered, bounces - 1, world));
+                return attenuation.mul_rgb(self.ray_color(scattered, bounces - 1, world));
             }
 
             return RgbColor::new(0., 0., 0.); // Show up around the edge of metals
@@ -309,7 +309,7 @@ fn defocus_disk_sample(cam: &Camera) -> Point3 {
 /// You can also implement your own sky by implementing the `Sky` trait for your struct.
 pub trait Sky: SkyClone {
     /// Returns the color of the sky for a given ray
-    fn color(&self, ray: Ray) -> Vec3;
+    fn color(&self, ray: Ray) -> RgbColor;
 }
 
 /// A trait to allow cloning of a `Sky` object, its useful.
@@ -354,13 +354,13 @@ pub struct GradientSky {
 }
 
 impl Sky for RgbColor {
-    fn color(&self, _direction: Ray) -> Vec3 {
+    fn color(&self, _direction: Ray) -> RgbColor {
         *self
     }
 }
 
 impl Sky for GradientSky {
-    fn color(&self, ray: Ray) -> Vec3 {
+    fn color(&self, ray: Ray) -> RgbColor {
         let t = 0.5 * (ray.direction.normalized().y + 1.0);
         self.start * (1.0 - t) + self.end * t
     }

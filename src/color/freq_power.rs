@@ -2,7 +2,7 @@ use std::{ops::Mul, rc::Rc};
 
 use crate::vec3::Vec3;
 
-use super::Color;
+use super::{Color, RgbColor};
 
 /// A color that represents a frequency and power
 pub struct FreqPowerColor {
@@ -41,9 +41,9 @@ impl Color for FreqPowerColor {
         [r, g, b]
     }
 
-    fn mul_vec3(&self, other: Vec3) -> Vec3 {
+    fn mul_rgb(&self, other: RgbColor) -> RgbColor {
         let rgb = self.to_rgb_bytes();
-        Vec3::new(rgb[0] as f64 / 255.0, rgb[1] as f64 / 255.0, rgb[2] as f64 / 255.0) * other
+        RgbColor::new(rgb[0] as f64 / 255.0, rgb[1] as f64 / 255.0, rgb[2] as f64 / 255.0) * other
     }
 
     fn div_scalar(&self, other: f64) -> Rc<dyn Color> {
@@ -54,12 +54,7 @@ impl Color for FreqPowerColor {
         Rc::new(FreqPowerColor::new(self.wavelength, self.power * other))
     }
 
-    /// Multiplies this color by a scalar, used for color attenuation during ray tracing
-    fn mul_scalar_in_place(&mut self, other: f64) {
-        self.power *= other;
-    }
-
-    fn to_wavelength(&self) -> f64 {
+    fn get_wavelength(&self) -> f64 {
         self.wavelength
     }
 }

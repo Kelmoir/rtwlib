@@ -13,11 +13,11 @@ fn main() -> std::io::Result<()> {
         objects: Vec::new(),
     };
     //create the materials
-    let mat_r = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1, 0, 0))));
+    let mat_r = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1., 0., 0.))));
     let mat_o = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1., 0.5, 0.))));
     let mat_y = Rc::new(Lambertian::new(Rc::new(RgbColor::new(1., 1., 0.))));
-    let mat_g = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0, 1, 0))));
-    let mat_b = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0, 0, 1))));
+    let mat_g = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0., 1., 0.))));
+    let mat_b = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0., 0., 1.))));
     let mat_v = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0.8, 0.3, 0.8))));
     let mat_ground = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0.9, 0.9, 0.9))));
     //add spheres to the world
