@@ -10,26 +10,33 @@ use super::Color;
 /// Values outside this range may cause visual artifacts.
 #[derive(Debug, Clone, Copy)]
 pub struct RgbColor {
-    pub x: f64,  // red component
-    pub y: f64,  // green component
-    pub z: f64,  // blue component
+    /// The red component of the color  
+    pub r: f64,
+    /// The green component of the color
+    pub g: f64,
+    /// The blue component of the color
+    pub b: f64,
 }
 
 impl RgbColor {
+    /// Creates a new `RgbColor` with the given red, green, and blue components.
     pub fn new(r: f64, g: f64, b: f64) -> Self {
-        RgbColor { x: r, y: g, z: b }
+        RgbColor { r, g, b }
     }
 
+    /// Creates a new `RgbColor` with the given value for all components.
     pub fn from(value: f64) -> Self {
         RgbColor::new(value, value, value)
     }
 
+    /// Creates a new `RgbColor` from a `Vec3`.
     pub fn from_vec3(v: &Vec3) -> Self {
-        RgbColor { x: v.x, y: v.y, z: v.z }
+        RgbColor { r: v.x, g: v.y, b: v.z }
     }
 
+    /// Converts a `RgbColor` to a `Vec3`.
     pub fn to_vec3(&self) -> Vec3 {
-        Vec3::new(self.x, self.y, self.z)
+        Vec3::new(self.r, self.g, self.b)
     }
 
     ///Converts a color to a hexadecimal string, starting with a `#`.
@@ -55,22 +62,22 @@ impl Color for RgbColor {
     fn to_rgb_bytes(&self) -> [u8; 3] {
         let export_colors = gamma_color_to_linear(self);
         let intensity = (0.0, 0.999);
-        let r_byte = (export_colors.x.clamp(intensity.0, intensity.1) * 255.0) as u8;
-        let g_byte = (export_colors.y.clamp(intensity.0, intensity.1) * 255.0) as u8;
-        let b_byte = (export_colors.z.clamp(intensity.0, intensity.1) * 255.0) as u8;
+        let r_byte = (export_colors.r.clamp(intensity.0, intensity.1) * 255.0) as u8;
+        let g_byte = (export_colors.g.clamp(intensity.0, intensity.1) * 255.0) as u8;
+        let b_byte = (export_colors.b.clamp(intensity.0, intensity.1) * 255.0) as u8;
         [r_byte, g_byte, b_byte]
     }
 
     fn mul_rgb(&self, other: RgbColor) -> RgbColor {
-        RgbColor::new(self.x * other.x, self.y * other.y, self.z * other.z)
+        RgbColor::new(self.r * other.r, self.g * other.g, self.b * other.b)
     }
 
     fn div_scalar(&self, other: f64) -> Rc<dyn Color> {
-        Rc::new(RgbColor::new(self.x / other, self.y / other, self.z / other))
+        Rc::new(RgbColor::new(self.r / other, self.g / other, self.b / other))
     }
 
     fn mul_scalar(&self, other: f64) -> Rc<dyn Color> {
-        Rc::new(RgbColor::new(self.x * other, self.y * other, self.z * other))
+        Rc::new(RgbColor::new(self.r * other, self.g * other, self.b * other))
     }
 }
 
@@ -78,7 +85,7 @@ impl Add for RgbColor {
     type Output = RgbColor;
 
     fn add(self, other: RgbColor) -> RgbColor {
-        RgbColor::new(self.x + other.x, self.y + other.y, self.z + other.z)
+        RgbColor::new(self.r + other.r, self.g + other.g, self.b + other.b)
     }
 }
 
@@ -86,7 +93,7 @@ impl Sub for RgbColor {
     type Output = RgbColor;
 
     fn sub(self, other: RgbColor) -> RgbColor {
-        RgbColor::new(self.x - other.x, self.y - other.y, self.z - other.z)
+        RgbColor::new(self.r - other.r, self.g - other.g, self.b - other.b)
     }
 }
 
@@ -94,7 +101,7 @@ impl Mul<f64> for RgbColor {
     type Output = RgbColor;
 
     fn mul(self, other: f64) -> RgbColor {
-        RgbColor::new(self.x * other, self.y * other, self.z * other)
+        RgbColor::new(self.r * other, self.g * other, self.b * other)
     }
 }
 
@@ -102,7 +109,7 @@ impl Mul<RgbColor> for f64 {
     type Output = RgbColor;
 
     fn mul(self, other: RgbColor) -> RgbColor {
-        RgbColor::new(other.x * self, other.y * self, other.z * self)
+        RgbColor::new(other.r * self, other.g * self, other.b * self)
     }
 }
 
@@ -110,7 +117,7 @@ impl Mul<RgbColor> for RgbColor {
     type Output = RgbColor;
 
     fn mul(self, other: RgbColor) -> RgbColor {
-        RgbColor::new(self.x * other.x, self.y * other.y, self.z * other.z)
+        RgbColor::new(self.r * other.r, self.g * other.g, self.b * other.b)
     }
 }
 
@@ -118,15 +125,15 @@ impl Div<f64> for RgbColor {
     type Output = RgbColor;
 
     fn div(self, other: f64) -> RgbColor {
-        RgbColor::new(self.x / other, self.y / other, self.z / other)
+        RgbColor::new(self.r / other, self.g / other, self.b / other)
     }
 }
 
 impl AddAssign for RgbColor {
     fn add_assign(&mut self, other: RgbColor) {
-        self.x += other.x;
-        self.y += other.y;
-        self.z += other.z;
+        self.r += other.r;
+        self.g += other.g;
+        self.b += other.b;
     }
 }
 
@@ -147,17 +154,17 @@ fn gamma_to_linear(gamma: f64) -> f64 {
 ///Converts a linear color to a gamma corrected color.
 fn linear_color_to_gamma(color: &RgbColor) -> RgbColor {
     RgbColor {
-        x: linear_to_gamma(color.x),
-        y: linear_to_gamma(color.y),
-        z: linear_to_gamma(color.z),
+        r: linear_to_gamma(color.r),
+        g: linear_to_gamma(color.g),
+        b: linear_to_gamma(color.b),
     }
 }
 
 ///Converts a gamma corrected color to a linear color.
 fn gamma_color_to_linear(color: &RgbColor) -> RgbColor {
     RgbColor {
-        x: gamma_to_linear(color.x),
-        y: gamma_to_linear(color.y),
-        z: gamma_to_linear(color.z),
+        r: gamma_to_linear(color.r),
+        g: gamma_to_linear(color.g),
+        b: gamma_to_linear(color.b),
     }
 }
