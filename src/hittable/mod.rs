@@ -5,6 +5,7 @@
 //!
 pub mod plane;
 pub mod sphere;
+pub mod extruded;
 use crate::{
     color::RgbColor,
     material::Material,
