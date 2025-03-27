@@ -109,6 +109,12 @@ impl HittableList {
     }
 }
 impl Hittable for HittableList {
+    /// Determines if a ray hits any of the objects in the list, and modifies a [`HitRecord`] if it does.
+    /// * `r` - The `Ray` to be traced.
+    /// * `ray_t` - The range of the ray.
+    /// * `rec` - The `HitRecord` to be modified.
+    /// # Returns
+    /// A boolean indicating if the ray hit any of the objects in the list.
     fn hit(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.end;
@@ -129,6 +135,11 @@ impl Hittable for HittableList {
 /// The `Hittable` trait is used to define objects that can be hit by rays, it would be implemented by any object in a scene like a Sphere or Cube.
 pub trait Hittable: HittableClone {
     /// Determines if a ray hits the object, and modifies a [`HitRecord`] if it does.
+    /// * `r` - The `Ray` to be traced.
+    /// * `ray_t` - The range of the ray.
+    /// * `rec` - The `HitRecord` to be modified.
+    /// # Returns
+    /// A boolean indicating if the ray hit the object.
     fn hit(&self, _r: &Ray, _ray_t: Range<f64>, _rec: &mut HitRecord) -> bool {
         false
     }
