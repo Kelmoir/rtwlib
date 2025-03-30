@@ -3,6 +3,7 @@
 
 use std::rc::Rc;
 use std::ops::Range;
+use crate::utils::RangeExtensions;
 use crate::vec3::*;
 use crate::hittable::{Hittable, HitRecord};
 use crate::material::Material;
@@ -40,6 +41,8 @@ pub trait FlatObject: FlatObjectClone + std::fmt::Debug {
     fn as_string(&self) -> String;
     /// Returns a vector of strings representing the object.
     fn as_info_vec(&self) -> Vec<String>;
+
+    fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord, height: f64) -> bool ;
 }
 
 pub trait FlatObjectClone {
@@ -62,10 +65,8 @@ impl Clone for Box<dyn FlatObject> {
 }
 
 impl Hittable for ExtrudedObject {
-    fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
 
-        false
-    }
+    
     fn as_string(&self) -> String {
         format!(
             "[ ExtrudedObject ] from object: {:?}, height: {}",
@@ -73,6 +74,7 @@ impl Hittable for ExtrudedObject {
             self.height
         )
     }
+
     fn as_info_vec(&self) -> Vec<String> {
         vec![
             "ExtrudedObject".to_string(),
@@ -81,5 +83,4 @@ impl Hittable for ExtrudedObject {
         ]
     }
 }
-
 

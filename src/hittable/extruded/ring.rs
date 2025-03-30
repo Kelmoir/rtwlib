@@ -1,6 +1,5 @@
-use std::{ops::Range, rc::Rc};
-use crate::{hittable::HitRecord, material::Material, vec3::{dot, Vec3}};
-use std::fmt;
+use std::{ops::Range, rc::Rc, vec};
+use crate::{hittable::HitRecord, material::Material, vec3::Vec3, ray};
 
 use super::FlatObject;
 
@@ -19,10 +18,15 @@ pub struct Ring {
     mat: Rc<dyn Material>,
 }
 
+
+
 impl Ring {
     pub fn new(center: Vec3, normal: Vec3, outer_radius: f64, inner_radius: f64, mat: Rc<dyn Material>) -> Self {
         Self { center, normal, outer_radius, inner_radius, mat }
     }
+
+
+
 }
 
 impl FlatObject for Ring {
@@ -69,53 +73,62 @@ impl FlatObject for Ring {
     }
     fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord, height: f64) -> bool {
         
-        
-        // Calculate intersection with the plane defined by normal and center
-        let denom = dot(&self.normal, &r.direction);
-        
-        // Ray is parallel to plane
-        if denom.abs() < 1e-8 {
+        let local_ray = ray::Ray::new(self.center, self.normal);
+
+        let mut hits: Vec<(f64, f64)> = Vec::new();
+        let outer_hits = ray::find_distances_at_distance(&local_ray, r, self.outer_radius);
+        let inner_hits = ray::find_distances_at_distance(&local_ray, r, self.inner_radius);
+        let upper_hit = ray::calculate_plane_intersection_distance(&r, &(self.center+self.normal*height), &self.normal);
+        let lower_hit = ray::calculate_plane_intersection_distance(&r, &self.center, &self.normal);  
+
+        outer_hits.iter().for_each(|h| {
+            if (0.0..height).contains(&h.0) {
+                hits.push((h.0, h.1));
+            }
+        });
+        inner_hits.iter().for_each(|h| {
+            if (0.0..height).contains(&h.0) {
+                hits.push((h.0, h.1));
+            }
+        });
+
+        if hits.len() == 0  && !upper_hit.is_some() && !lower_hit.is_some() {
             return false;
         }
 
-        let v = self.center - r.origin;
-        let t = dot(&v, &self.normal) / denom;
 
-        // Check if intersection is within valid range
-        if !crate::utils::RangeExtensions::surrounds(&ray_t, t) {
-            return false;
+        let mut first_hit:(f64, f64) = (f64::INFINITY, f64::INFINITY);
+        for hit in hits {
+            if hit.1 < first_hit.1 {    //Pick the hit, where the 2nd ray has traveled the least distance
+                first_hit = hit;
+            }
         }
 
-        // Calculate intersection point
-        let intersection = r.at(t);
-        
-        // Get vector from center to intersection point
-        let to_intersection = intersection - self.center;
-        
-        // Project onto plane to get radius
-        let projected = to_intersection - self.normal * dot(&to_intersection, &self.normal);
-        let radius = projected.length();
+        let mut intersection = r.at(first_hit.0);
+        let mut normal_vec = intersection - self.center+self.normal*first_hit.0;
 
-        if radius > self.outer_radius {
-            return false;
+        if upper_hit.is_some() {
+            let some_upper_hit = upper_hit.unwrap();
+            if some_upper_hit.1 < first_hit.1 {
+                first_hit = some_upper_hit;
+                intersection = r.at(first_hit.0);
+                normal_vec = self.normal;
+            }
         }
-        // Check if point is within ring bounds
-        else if radius < self.inner_radius {
-            return false;
+        if lower_hit.is_some() {
+            let some_lower_hit = lower_hit.unwrap();
+            if some_lower_hit.1 < first_hit.1 {
+                first_hit = some_lower_hit; 
+                intersection = r.at(first_hit.0);
+                normal_vec = -self.normal;
+            }
         }
-
-        // Check if point is within height bounds
-        let height_vec = self.normal * height;
-        let relative_height = dot(&(intersection - self.center), &self.normal);
-        
-        if relative_height < 0.0 || relative_height > height {
-            return false;
-        }
+        normal_vec = normal_vec.normalized();
 
         // Record the hit information
-        rec.t = t;
+        rec.t = first_hit.1;
         rec.p = intersection;
-        rec.set_face_normal(r, &self.normal);
+        rec.set_face_normal(r, &normal_vec);
         rec.set_material(Rc::clone(&self.mat));
 
         true

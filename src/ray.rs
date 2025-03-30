@@ -44,7 +44,7 @@ fn min_distance_between_rays(ray1: &Ray, ray2: &Ray) -> f64 {
     (dot(&r, &n)).abs() / n.length()
 }
 
-fn calculate_plane_intersection_point(ray: &Ray, plane_origin: &Vec3, plane_normal: &Vec3) -> Option<Vec3> {
+pub(crate) fn calculate_plane_intersection_point(ray: &Ray, plane_origin: &Vec3, plane_normal: &Vec3) -> Option<Vec3> {
     let denom = dot(&plane_normal, &ray.direction);
     
     // Check if ray is parallel to plane (or nearly parallel)
@@ -53,7 +53,7 @@ fn calculate_plane_intersection_point(ray: &Ray, plane_origin: &Vec3, plane_norm
     }
     
     // Calculate distance along ray to intersection
-    let t = dot(&(plane_origin - ray.origin), &plane_normal) / denom;
+    let t = dot(&(*plane_origin - ray.origin), &plane_normal) / denom;
     
     // If t is negative, intersection is behind ray origin
     if t < 0.0 {
@@ -62,4 +62,126 @@ fn calculate_plane_intersection_point(ray: &Ray, plane_origin: &Vec3, plane_norm
     
     // Calculate intersection point
     Some(ray.at(t))
+}
+
+/// Returns the distance and the distance along the ray to the intersection point of a ray and a plane.
+/// * `ray` - The ray.
+/// * `plane_origin` - The origin of the plane.
+/// * `plane_normal` - The normal of the plane.
+/// # Returns
+/// The distance and the distance along the ray to the intersection point of a ray and a plane.
+/// .0: distance from plane origin to intersection point
+/// .1: distance along ray to intersection point
+pub(crate) fn calculate_plane_intersection_distance(ray: &Ray, plane_origin: &Vec3, plane_normal: &Vec3) -> Option<(f64, f64)> {
+    let denom = dot(&plane_normal, &ray.direction);
+    
+    // Check if ray is parallel to plane (or nearly parallel)
+    if denom.abs() < 1e-4 {
+        return None;
+    }
+    
+    // Calculate distance along ray to intersection
+    let t = dot(&(*plane_origin - ray.origin), &plane_normal) / denom;
+    
+    // If t is negative, intersection is behind ray origin
+    if t < 0.0 {
+        return None;
+    }
+
+    let distance = (ray.at(t) - *plane_origin).length();
+
+    // Calculate intersection point
+    Some((distance, t))
+}
+
+fn find_points_at_distance(ray1: &Ray, ray2: &Ray, distance: f64) -> Vec<(Vec3, Vec3)> {
+    let r = ray2.origin - ray1.origin;  // Vector between origins
+    
+    // Calculate dot products
+    let a11 = dot(&ray1.direction, &ray1.direction);
+    let a12 = dot(&ray1.direction, &ray2.direction);
+    let a22 = dot(&ray2.direction, &ray2.direction);
+    let r1 = dot(&ray1.direction, &r);
+    let r2 = dot(&ray2.direction, &r);
+    
+    // Calculate quadratic coefficients
+    let a = a11 * a22 - a12 * a12;
+    let b = 2.0 * (a12 * r1 - a11 * r2);
+    let c = r.length_squared() - distance * distance;
+    
+    // Solve quadratic equation
+    let discriminant = b * b - 4.0 * a * c;
+    
+    if discriminant < 0.0 {
+        return vec![];  // No solutions
+    }
+    
+    let mut solutions = Vec::new();
+    
+    // Calculate s values
+    let sqrt_discriminant = discriminant.sqrt();
+    let s1 = (-b + sqrt_discriminant) / (2.0 * a);
+    let s2 = (-b - sqrt_discriminant) / (2.0 * a);
+    
+    // Calculate corresponding t values
+    for s in [s1, s2].iter() {
+        let t = (s * a12 - r1) / a11;
+        
+        // Calculate points on rays
+        let p1 = ray1.at(t);
+        let p2 = ray2.at(*s);
+        
+        // Verify distance
+        if (p1 - p2).length().abs() - distance < f64::EPSILON {
+            solutions.push((p1, p2));
+        }
+    }
+    
+    solutions
+}
+
+pub(crate) fn find_distances_at_distance(ray1: &Ray, ray2: &Ray, distance: f64) -> Vec<(f64, f64)> {
+    let r = ray2.origin - ray1.origin;  // Vector between origins
+    
+    // Calculate dot products
+    let a11 = dot(&ray1.direction, &ray1.direction);
+    let a12 = dot(&ray1.direction, &ray2.direction);
+    let a22 = dot(&ray2.direction, &ray2.direction);
+    let r1 = dot(&ray1.direction, &r);
+    let r2 = dot(&ray2.direction, &r);
+    
+    // Calculate quadratic coefficients
+    let a = a11 * a22 - a12 * a12;
+    let b = 2.0 * (a12 * r1 - a11 * r2);
+    let c = r.length_squared() - distance * distance;
+    
+    // Solve quadratic equation
+    let discriminant = b * b - 4.0 * a * c;
+    
+    if discriminant < 0.0 {
+        return vec![];  // No solutions
+    }
+    
+    let mut solutions = Vec::new();
+    
+    // Calculate s values
+    let sqrt_discriminant = discriminant.sqrt();
+    let s1 = (-b + sqrt_discriminant) / (2.0 * a);
+    let s2 = (-b - sqrt_discriminant) / (2.0 * a);
+    
+    // Calculate corresponding t values
+    for s in [s1, s2].iter() {
+        let t = (s * a12 - r1) / a11;
+        
+        // Calculate points on rays
+        let p1 = ray1.at(t);
+        let p2 = ray2.at(*s);
+        
+        // Verify distance
+        if (p1 - p2).length().abs() - distance < f64::EPSILON {
+            solutions.push((t, *s));
+        }
+    }
+    
+    solutions
 }
