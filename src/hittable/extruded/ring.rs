@@ -1,5 +1,5 @@
 use std::{ops::Range, rc::Rc, vec};
-use crate::{hittable::HitRecord, material::Material, vec3::Vec3, ray};
+use crate::{hittable::HitRecord, material::Material, ray, utils::RangeExtensions, vec3::Vec3};
 
 use super::FlatObject;
 
@@ -81,25 +81,27 @@ impl FlatObject for Ring {
         let upper_hit = ray::calculate_plane_intersection_distance(&r, &(self.center+self.normal*height), &self.normal);
         let lower_hit = ray::calculate_plane_intersection_distance(&r, &self.center, &self.normal);  
 
-        outer_hits.iter().for_each(|h| {
-            if (0.0..height).contains(&h.0) {
-                hits.push((h.0, h.1));
-            }
-        });
-        inner_hits.iter().for_each(|h| {
-            if (0.0..height).contains(&h.0) {
-                hits.push((h.0, h.1));
-            }
-        });
 
-        if hits.len() == 0  && !upper_hit.is_some() && !lower_hit.is_some() {
+        for item in outer_hits {
+            if ray_t.surrounds(item.1)  && item.0 >= 0.0 && item.0 <= height{
+                hits.push((item.0, item.1));
+            }
+        }
+        for item in inner_hits {
+            if ray_t.surrounds(item.1)  && item.0 >= 0.0 && item.0 <= height{
+                hits.push((item.0, item.1));
+            }
+        }
+
+        if hits.len() == 0  && (!upper_hit.is_some() || !ray_t.surrounds(upper_hit.unwrap().1))
+        && (!lower_hit.is_some() || !ray_t.surrounds(lower_hit.unwrap().1)) {
             return false;
         }
 
-
+        //Pick the hit, where the 2nd ray has traveled the least distance
         let mut first_hit:(f64, f64) = (f64::INFINITY, f64::INFINITY);
         for hit in hits {
-            if hit.1 < first_hit.1 {    //Pick the hit, where the 2nd ray has traveled the least distance
+            if hit.1 < first_hit.1 {
                 first_hit = hit;
             }
         }
@@ -109,22 +111,27 @@ impl FlatObject for Ring {
 
         if upper_hit.is_some() {
             let some_upper_hit = upper_hit.unwrap();
-            if some_upper_hit.1 < first_hit.1 {
+            if some_upper_hit.1 < first_hit.1 && ray_t.surrounds(some_upper_hit.1)  && 
+            some_upper_hit.0 <= self.outer_radius  && some_upper_hit.0 >= self.inner_radius {
                 first_hit = some_upper_hit;
-                intersection = r.at(first_hit.0);
+                intersection = r.at(first_hit.1);
                 normal_vec = self.normal;
             }
         }
         if lower_hit.is_some() {
             let some_lower_hit = lower_hit.unwrap();
-            if some_lower_hit.1 < first_hit.1 {
+            if some_lower_hit.1 < first_hit.1 && ray_t.surrounds(some_lower_hit.1)  && 
+            some_lower_hit.0 <= self.outer_radius  && some_lower_hit.0 >= self.inner_radius {
                 first_hit = some_lower_hit; 
-                intersection = r.at(first_hit.0);
+                intersection = r.at(first_hit.1);
                 normal_vec = -self.normal;
             }
         }
         normal_vec = normal_vec.normalized();
 
+        if first_hit.1 >= f64::INFINITY {
+            return false;
+        }
         // Record the hit information
         rec.t = first_hit.1;
         rec.p = intersection;
@@ -148,8 +155,8 @@ mod tests {
         let ring = Ring::new(
             Vec3::new(0.0, 0.0, 0.0), // center
             Vec3::new(0.0, 1.0, 0.0), // normal
-            1.0, // inner radius
-            2.0, // outer radius
+            2.0, // inner radius
+            1.0, // outer radius
             mat
         );
 
@@ -188,7 +195,7 @@ mod tests {
         // Ray missing the ring (outside outer radius)
         let r = Ray::new(
             Vec3::new(3.0, 2.0, 0.0),
-            Vec3::new(0.0, -1.0, 0.0)
+            Vec3::new(1.0, -1.0, 0.0)
         );
         let mut rec = HitRecord::default();
         assert!(!ring.hit(&r, 0.001..f64::INFINITY, &mut rec, 1.0), "Ray should miss the cylinder, outside the radius");
@@ -211,7 +218,7 @@ mod tests {
 
         // Ray missing the cylinder (above)
         let r = Ray::new(
-            Vec3::new(0.5, -0.5, 0.0),
+            Vec3::new(0.5, 1.5, 0.0),
             Vec3::new(1.0, 0.0, 0.0)
         );
         let mut rec = HitRecord::default();
