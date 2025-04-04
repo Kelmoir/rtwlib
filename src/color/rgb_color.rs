@@ -138,7 +138,7 @@ impl AddAssign for RgbColor {
 }
 
 ///Converts a linear color value to a gamma corrected value.
-fn linear_to_gamma(linear: f64) -> f64 {
+pub fn linear_to_gamma(linear: f64) -> f64 {
     if linear > 0. {
         return linear.sqrt();
     }
@@ -147,12 +147,12 @@ fn linear_to_gamma(linear: f64) -> f64 {
 
 ///Converts a gamma corrected color value to a linear value.
 /// This is the inverse of `linear_to_gamma`.
-fn gamma_to_linear(gamma: f64) -> f64 {
+pub fn gamma_to_linear(gamma: f64) -> f64 {
     return gamma * gamma;
 }
 
 ///Converts a linear color to a gamma corrected color.
-fn linear_color_to_gamma(color: &RgbColor) -> RgbColor {
+pub fn linear_color_to_gamma(color: &RgbColor) -> RgbColor {
     RgbColor {
         r: linear_to_gamma(color.r),
         g: linear_to_gamma(color.g),
