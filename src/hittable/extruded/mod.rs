@@ -1,6 +1,12 @@
+//! A module for extruded objects.
+//! An extruded object is an object that is extruded from a list of outlines.
+//! The outlines are extruded along a normal vector, and the result is a 3-d object.
+//! The outlines are defined by the [`ExtrudableOutline`] trait.
+//!
+
 use std::{fmt::Debug, ops::Range, rc::Rc};
 
-use crate::{material::Material, ray::Ray, utils::RangeExtensions, vec3::Vec3};
+use crate::{material::Material, ray::Ray, vec3::Vec3};
 
 use super::{HitRecord, Hittable};
 

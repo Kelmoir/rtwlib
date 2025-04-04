@@ -1,3 +1,9 @@
+//! A module for the `Circle` struct and its implementation.
+//! A `Circle` is a 2-d circle that can be extruded into a 3-d object.
+//! The radius defines the distance from the center to the outside of the circle. 
+//! A positive radius defines the inside of the circle as the inside of the object, 
+//! a negative radius defines the outside of the circle as the inside of the object.
+//!
 use super::ExtrudableOutline;
 use crate::{
     ray::Ray,
