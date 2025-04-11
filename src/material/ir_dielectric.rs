@@ -74,6 +74,21 @@ impl IrDielectric {
         // A = e^(-alpha * distance)
         E.powf(-self.get_absorption_coefficient_for_wavelength(wavelength) * distance)
     }
+
+    /// Refracts a unit vector `uv` across a normal vector `n` with a given IOR (`etai_over_etat`) ratio.
+    /// This function is used to simulate the refraction of light through a material.
+    /// It returns a vector representing the direction refracted light.
+    fn refract(uv: Vec3, n: &Vec3, etai_over_etat: f64, wavelength: f64) -> Vec3 {
+        // Adjust refractive index based on wavelength using Cauchy's equation
+        // n(λ) = A + B/λ^2 + C/λ^4 where λ is in micrometers
+        let wavelength_um = wavelength / 1000.0; // Convert nm to μm
+        let adjusted_ior = etai_over_etat * (1.0 + 0.0017 / (wavelength_um * wavelength_um)); // Simple Cauchy model
+        
+        let cos_theta = f64::min(dot(&-uv, n), 1.0);
+        let r_out_perp = adjusted_ior * (uv + cos_theta * *n);
+        let r_out_parallel = -*n * (1.0 - r_out_perp.length_squared()).abs().sqrt();
+        r_out_perp + r_out_parallel
+    }
 }
 
 impl Material for IrDielectric {
@@ -83,12 +98,12 @@ impl Material for IrDielectric {
         rec: &HitRecord,
         attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
-        _last_material: &Box<dyn Material>,
+        last_material: &Box<dyn Material>,
     ) -> bool {
         *attenuation = Rc::new(RgbColor::new(1., 1., 1.));
 
         let ri: f64 = if rec.front_face {
-            1.0 / self.optical_density
+            last_material.get_optical_density() / self.optical_density
         } else {
             self.optical_density
         };
@@ -102,7 +117,7 @@ impl Material for IrDielectric {
         if cannot_refract || reflectance(cos_theta, ri) > rand::thread_rng().gen_range(0.0..1.0) {
             direction = unit_direction.reflect(&rec.normal)
         } else {
-            direction = refract(unit_direction, &rec.normal, ri)
+            direction = IrDielectric::refract(unit_direction, &rec.normal, ri, attenuation.get_wavelength())
         }
 
         *scattered = Ray::new(rec.p, direction);
@@ -118,6 +133,9 @@ impl Material for IrDielectric {
         let distance = _last_hit.t;
         let absorption = self.evaluate_absorption(distance, attenuation.get_wavelength());
         *attenuation = attenuation.mul_scalar(absorption);
+    }
+    fn get_optical_density(&self) -> f64 {
+        self.optical_density
     }
 }
 

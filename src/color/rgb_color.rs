@@ -79,6 +79,11 @@ impl Color for RgbColor {
     fn mul_scalar(&self, other: f64) -> Rc<dyn Color> {
         Rc::new(RgbColor::new(self.r * other, self.g * other, self.b * other))
     }
+
+    /// Returns the intensity of the color
+    fn intensity(&self) -> f64 {
+        (self.r + self.g + self.b) / 3.0
+    }
 }
 
 impl Add for RgbColor {

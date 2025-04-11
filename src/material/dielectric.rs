@@ -59,6 +59,9 @@ impl Material for Dielectric {
         _last_hit: &HitRecord,
     )
     {}
+    fn get_optical_density(&self) -> f64 {
+        self.ior
+    }
 }
 
 //schlick approximation for reflectance at grazing angles

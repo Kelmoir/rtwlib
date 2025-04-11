@@ -63,4 +63,8 @@ pub trait Material: Debug {
         _last_hit: &HitRecord,
     )
     {}
+    /// Returns the optical density of the material
+    fn get_optical_density(&self) -> f64 {
+        1.0
+    }
 }

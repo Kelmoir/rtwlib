@@ -25,4 +25,9 @@ pub trait Color: 'static {
     fn get_wavelength(&self) -> f64 {
         500.0
     }
+
+    /// Returns the intensity of the color
+    fn intensity(&self) -> f64 {
+        1.0
+    }
 }

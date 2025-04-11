@@ -57,6 +57,11 @@ impl Color for FreqPowerColor {
     fn get_wavelength(&self) -> f64 {
         self.wavelength
     }
+    /// Returns the intensity of the color
+    fn intensity(&self) -> f64 {
+        self.power
+    }
+
 }
 
 /// Creates a new FreqPowerColor
