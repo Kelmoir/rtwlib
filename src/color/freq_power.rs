@@ -70,6 +70,7 @@ impl FreqPowerColor {
     pub fn new(wavelength: f64, power: f64) -> Self {
         Self { wavelength, power }
     }
+    /// Creates a new FreqPowerColor from a temperature, based of a black body emission
     pub fn black_body(temperature: f64) -> Self {
         use rand::Rng;
         let mut rng = rand::thread_rng();

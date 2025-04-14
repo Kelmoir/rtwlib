@@ -1,12 +1,33 @@
+//! # Emitter
+//! 
+//! An emitter is a line of points that emits rays in a half sphere centered around the normal vector.
+//! 
+//! ## Usage
+//! 
+//! ```rust
+//! let emitter = Emitter::new(start, end, normal, temperature, filler_material);
+//! emitter.emit_rays(n, m, &mut world);
+//! ```
+//! 
+//! ## Arguments
+//! 
+//! * `start` - The start point of the emission line
+//! * `end` - The end point of the emission line
+//! * `normal` - The normal vector to the emission plane
+//! * `temperature` - The temperature of the emitter
+//! * `filler_material` - The material, the scene is filled with, before accounting for any other items.
+
 use crate::color::{Color, FreqPowerColor};
 use crate::hittable::{HitRecord, Hittable};
 use crate::material::Material;
 use crate::ray::Ray;
+use crate::vec3::dot;
 use crate::{hittable::HittableList, vec3::Vec3};
-use rand_distr::{Distribution, Normal};
+use rand::Rng;
 use std::f64::consts::PI;
 use std::rc::Rc;
 
+/// An emitter is a line of points that emits rays in a half sphere centered around the normal vector.
 pub struct Emitter {
     start: Vec3,      // Start point of emission line
     end: Vec3,        // End point of emission line
@@ -45,7 +66,6 @@ impl Emitter {
     /// m: number of rays per point
     pub fn emit_rays(&self, n: u32, m: u32, world: &mut HittableList) {
         let mut rng = rand::thread_rng();
-        let mut rays: Vec<Ray> = Vec::new();
 
         // Generate n points along the line
         for i in 0..n {
@@ -54,22 +74,26 @@ impl Emitter {
 
             // Generate m rays from each point
             for _ in 0..m {
-                // Generate normal distribution for angles
-                let normal = Normal::new(0.0, 1.0).unwrap(); // mean 0, std dev 1
-                let u = normal.sample(&mut rng);
-                let v = normal.sample(&mut rng);
+                // Generate random direction uniformly on sphere
+                let u = rng.gen_range(0.0..1.0);
+                let v = rng.gen_range(0.0..1.0);
 
-                // Convert to spherical coordinates
-                let theta = (2.0 * PI * u).cos().acos();
-                let phi = 2.0 * PI * v;
+                // Convert to spherical coordinates using uniform sphere point picking
+                let theta = 2.0_f64 * PI * u;
+                let phi = (2.0_f64 * v - 1.0_f64).acos();
 
                 // Convert spherical to cartesian coordinates
-                let x = theta.sin() * phi.cos();
-                let y = theta.sin() * phi.sin();
-                let z = theta.cos();
+                let x = phi.sin() * theta.cos();
+                let y = phi.sin() * theta.sin(); 
+                let z = phi.cos();
 
                 // Create direction vector
-                let direction = Vec3::new(x, y, z);
+                let mut direction = Vec3::new(x, y, z);
+
+                // If direction is more than 90° from normal, flip it
+                if dot(&direction, &self.normal) < 0.0 {
+                    direction = -direction;
+                }
 
                 // Create ray and color
                 let ray = Ray::new(origin, direction);
