@@ -70,6 +70,30 @@ impl FreqPowerColor {
     pub fn new(wavelength: f64, power: f64) -> Self {
         Self { wavelength, power }
     }
+    pub fn black_body(temperature: f64) -> Self {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        
+        // Wien's displacement law to find peak wavelength in nanometers
+        let peak_wavelength = 2898000.0 / temperature;
+        
+        // Generate random wavelength weighted around peak using normal distribution
+        // Standard deviation chosen to give reasonable spread
+        let std_dev = peak_wavelength * 0.5;
+        let wavelength = loop {
+            //TODO: Correct setup...  Does not care about distribution
+            let w = rng.sample(rand_distr::Normal::new(peak_wavelength, std_dev).unwrap());
+            if w > 0.0 { // Wavelength must be positive
+                break w;
+            }
+        };
+
+        // Power follows Planck's law but simplified
+        // Just using relative power compared to peak
+        let power = (-((wavelength - peak_wavelength).powi(2))/(2.0 * std_dev.powi(2))).exp();
+        
+        Self::new(wavelength, power)
+    }
 }
 
 impl Mul<Vec3> for FreqPowerColor {

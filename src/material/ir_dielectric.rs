@@ -145,3 +145,81 @@ fn reflectance(cos: f64, ior: f64) -> f64 {
     let r0 = r0 * r0; //if everything breaks again try changing this
     r0 + (1. - r0) * (1. - cos).powf(5.)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::vec3::Vec3;
+    use crate::ray::Ray;
+    use crate::color::FreqPowerColor;
+    use std::rc::Rc;
+
+    #[test]
+    fn test_ir_dielectric_creation() {
+        let ir = IrDielectric::new(1.5, vec![]);
+        assert_eq!(ir.optical_density, 1.5);
+    }
+
+    #[test]
+    fn test_reflection() {
+        let ir = IrDielectric::new(1.5, vec![]);
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, -1.0, 0.0).normalized());
+        let mut rec = HitRecord::default();
+        rec.normal = Vec3::new(0.0, 1.0, 0.0);
+        rec.p = Vec3::new(1.0, 0.0, 0.0);
+        rec.front_face = true;
+
+        let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
+        let mut attenuation: Rc<dyn Color> = Rc::new(FreqPowerColor::new(1.0, 1.0));
+        let last_material:Box<dyn Material> = Box::new(IrDielectric::new(1.0, vec![]));
+
+        assert!(ir.scatter(&ray, &rec, &mut attenuation, &mut scattered, &last_material));
+    }
+
+    #[test]
+    fn test_absorption() {
+        // Create an absorption spectrum for sapphire (Al2O3)
+        // Sapphire is highly transparent in IR wavelengths between 0.15-5.5 microns
+        // Data approximated from real transmission curves
+        let absorption_points = vec![
+            // wavelength (microns), absorption coefficient (cm^-1)
+            (0.15, 10.0),  // High absorption in UV
+            (0.2, 5.0),
+            (0.3, 0.5),
+            (0.4, 0.1),    // Becoming transparent
+            (0.7, 0.05),   // Visible light region
+            (1.0, 0.02),   // Near IR - very transparent
+            (2.0, 0.01),
+            (3.0, 0.01),
+            (4.0, 0.01),
+            (5.0, 0.01),
+            (5.5, 0.05),   // Starting to absorb again
+            (6.0, 2.0),    // Strong absorption begins
+            (7.0, 10.0)    // High absorption in far IR
+        ];
+        let ir = IrDielectric::new(1.5, absorption_points);
+        let mut rec = HitRecord::default();
+        rec.t = 2.0; // Distance traveled through material
+        
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
+        let mut color: Rc<dyn Color> = Rc::new(FreqPowerColor::new(1.0, 1.0));
+        
+        ir.perform_absorption(&ray, &mut color, &rec);
+        
+        // Verify absorption occurred (color should be attenuated)
+        assert!(color.intensity() < 1.0);
+    }
+
+    #[test]
+    fn test_optical_density() {
+        let ir = IrDielectric::new(1.5, vec![]);
+        assert_eq!(ir.get_optical_density(), 1.5);
+    }
+
+    #[test]
+    fn test_reflectance_calculation() {
+        let r = reflectance(0.5, 1.5);
+        assert!(r >= 0.0 && r <= 1.0);
+    }
+}
+

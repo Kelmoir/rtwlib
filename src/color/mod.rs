@@ -30,4 +30,5 @@ pub trait Color: 'static {
     fn intensity(&self) -> f64 {
         1.0
     }
+
 }

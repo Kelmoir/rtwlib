@@ -9,10 +9,10 @@ use crate::{color::Color, hittable::HitRecord, material::Material, ray::Ray};
 /// A detector for incoming rays. Rays will never scatter, but they are absorbed.
 /// At the end of a simulation run, the detected energy may be exported
 pub struct Detector {
-    _received_energy: RefCell<f64>,
-    _width: i32,
-    _height: i32,
-    _hit_buffer: RefCell<Vec<f64>>,
+    received_energy: RefCell<f64>,
+    width: i32,
+    height: i32,
+    hit_buffer: RefCell<Vec<f64>>,
 }
 
 impl Detector {
@@ -21,10 +21,10 @@ impl Detector {
         let size = (width * height) as usize;
         let buffer = vec![0.0; size];
         Detector {
-            _received_energy: RefCell::new(0.0),
-            _width: width,
-            _height: height,
-            _hit_buffer: RefCell::new(buffer),
+            received_energy: RefCell::new(0.0),
+            width,
+            height,
+            hit_buffer: RefCell::new(buffer),
         }
     }
 }
@@ -46,22 +46,22 @@ impl Material for Detector {
         let y = (hit_pos[1] + 1.0) * 0.5;
         
         // Convert to pixel coordinates
-        let px = (x * (self._width as f64)) as i32;
-        let py = (y * (self._height as f64)) as i32;
+        let px = (x * (self.width as f64)) as i32;
+        let py = (y * (self.height as f64)) as i32;
         
         // Bounds check
-        if px >= 0 && px < self._width && py >= 0 && py < self._height {
-            let idx = (py * self._width + px) as usize;
+        if px >= 0 && px < self.width && py >= 0 && py < self.height {
+            let idx = (py * self.width + px) as usize;
             
             // Add energy from incoming ray to buffer
             let ray_energy = _attenuation.intensity();
             
             // Get mutable borrows one at a time
-            let mut buffer = self._hit_buffer.borrow_mut();
+            let mut buffer = self.hit_buffer.borrow_mut();
             buffer[idx] += ray_energy;
             drop(buffer); // Release the borrow
             
-            let mut energy = self._received_energy.borrow_mut();
+            let mut energy = self.received_energy.borrow_mut();
             *energy += ray_energy;
         }
         
@@ -77,20 +77,20 @@ impl Material for Detector {
 impl Detector {
     /// Get the total received energy
     pub fn get_received_energy(&self) -> f64 {
-        *self._received_energy.borrow()
+        *self.received_energy.borrow()
     }
 
     /// Get the texture of the detector
     /// The texture is a normalized version of the hit buffer
     pub fn get_texture(&self) -> Vec<f64> {
         // Return a copy of the hit buffer normalized by total received energy
-        let buffer = self._hit_buffer.borrow();
-        if *self._received_energy.borrow() > 0.0 {
+        let buffer = self.hit_buffer.borrow();
+        if *self.received_energy.borrow() > 0.0 {
             buffer.iter()
-                .map(|x| x / *self._received_energy.borrow())
+                .map(|x| x / *self.received_energy.borrow())
                 .collect()
         } else {
-            vec![0.0; (self._width * self._height) as usize]
+            vec![0.0; (self.width * self.height) as usize]
         }
     }
 }
