@@ -1,6 +1,6 @@
 //! `Vec3` is a simple 3D vector struct, with x, y, and z components, and a bunch of utility functions.
-//! All of the vector math used in the raytracer is implemented here.
-//! Vec3 has a few aliases, such as `Point3`, which is used to represent a point in 3D space, and `Color`, which is used to represent a color, and these are exchangable. ( althoug I would reccomend using `Color` for colors, and `Point3` for discrete positions )
+//! All of the vector math used in the ray tracer is implemented here.
+//! Vec3 has a few aliases, such as `Point3`, which is used to represent a point in 3D space, and `Color`, which is used to represent a color, and these are exchangeable. ( although I would recommend using `Color` for colors, and `Point3` for discrete positions )
 use rand::Rng;
 use std::ops::SubAssign;
 #[allow(dead_code)]
@@ -32,7 +32,7 @@ impl Vec3 {
     }
 
     /// Returns a random vector in the bounds of `min` to `max`
-    /// All components are individually randomised
+    /// All components are individually randomized
     pub fn random(min: f64, max: f64) -> Vec3 {
         let mut rng = rand::thread_rng();
         Vec3 {
@@ -173,7 +173,7 @@ impl IndexMut<usize> for Vec3 {
     }
 }
 
-//vec3 Neg implemntation, allows use of -vec3
+//vec3 Neg implementation, allows use of -vec3
 impl Neg for Vec3 {
     type Output = Vec3;
 
