@@ -1,11 +1,12 @@
 use std::{f64::consts::E, rc::Rc};
 
 use crate::{
-    color::{Color, RgbColor},
+    color::Color,
     hittable::HitRecord,
     material::Material,
     ray::Ray,
     vec3::*,
+    color::FreqPowerColor,
 };
 ///! A dielectric material, refracts light, basically glass.
 use rand::Rng;
@@ -14,7 +15,7 @@ use rand::Rng;
 type DataPoint = (f64, f64);
 type Graph = Vec<DataPoint>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// A dielectric material, refracts light, basically glass.
 pub struct IrDielectric {
     optical_density: f64,
@@ -98,9 +99,9 @@ impl Material for IrDielectric {
         rec: &HitRecord,
         attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
-        last_material: &Box<dyn Material>,
+        last_material: &mut Rc<dyn Material>,
     ) -> bool {
-        *attenuation = Rc::new(RgbColor::new(1., 1., 1.));
+        *attenuation = Rc::new(FreqPowerColor::new(1.0, 1.0));
 
         let ri: f64 = if rec.front_face {
             last_material.get_optical_density() / self.optical_density
@@ -117,7 +118,8 @@ impl Material for IrDielectric {
         if cannot_refract || reflectance(cos_theta, ri) > rand::thread_rng().gen_range(0.0..1.0) {
             direction = unit_direction.reflect(&rec.normal)
         } else {
-            direction = IrDielectric::refract(unit_direction, &rec.normal, ri, attenuation.get_wavelength())
+            direction = IrDielectric::refract(unit_direction, &rec.normal, ri, attenuation.get_wavelength());
+            *last_material = Rc::new(self.clone());
         }
 
         *scattered = Ray::new(rec.p, direction);
@@ -126,11 +128,10 @@ impl Material for IrDielectric {
     }
     fn perform_absorption(
         &self,
-        _relevant_ray: &Ray,
         attenuation: &mut Rc<dyn Color>,
-        _last_hit: &HitRecord,
+        rec: &HitRecord,
     ) {
-        let distance = _last_hit.t;
+        let distance = rec.t;
         let absorption = self.evaluate_absorption(distance, attenuation.get_wavelength());
         *attenuation = attenuation.mul_scalar(absorption);
     }
@@ -171,9 +172,9 @@ mod tests {
 
         let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
         let mut attenuation: Rc<dyn Color> = Rc::new(FreqPowerColor::new(1.0, 1.0));
-        let last_material:Box<dyn Material> = Box::new(IrDielectric::new(1.0, vec![]));
+        let mut last_material:Rc<dyn Material> = Rc::new(IrDielectric::new(1.0, vec![]));
 
-        assert!(ir.scatter(&ray, &rec, &mut attenuation, &mut scattered, &last_material));
+        assert!(ir.scatter(&ray, &rec, &mut attenuation, &mut scattered, &mut last_material));
     }
 
     #[test]
@@ -201,10 +202,9 @@ mod tests {
         let mut rec = HitRecord::default();
         rec.t = 2.0; // Distance traveled through material
         
-        let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut color: Rc<dyn Color> = Rc::new(FreqPowerColor::new(1.0, 1.0));
         
-        ir.perform_absorption(&ray, &mut color, &rec);
+        ir.perform_absorption( &mut color, &rec);
         
         // Verify absorption occurred (color should be attenuated)
         assert!(color.intensity() < 1.0);

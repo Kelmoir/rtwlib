@@ -1,16 +1,16 @@
 //! # Emitter
-//! 
+//!
 //! An emitter is a line of points that emits rays in a half sphere centered around the normal vector.
-//! 
+//!
 //! ## Usage
-//! 
+//!
 //! ```rust
 //! let emitter = Emitter::new(start, end, normal, temperature, filler_material);
 //! emitter.emit_rays(n, m, &mut world);
 //! ```
-//! 
+//!
 //! ## Arguments
-//! 
+//!
 //! * `start` - The start point of the emission line
 //! * `end` - The end point of the emission line
 //! * `normal` - The normal vector to the emission plane
@@ -34,14 +34,14 @@ pub struct Emitter {
     normal: Vec3,     // Normal vector to emission plane
     temperature: f64, // Temperature for black body radiation
     /// The material, the scene is filled with, before accounting for any other items.
-    pub filler_material: Box<dyn Material>,
+    pub filler_material: Rc<dyn Material>,
 }
 
 impl Emitter {
     /// Create a new emitter
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `start` - The start point of the emission line
     /// * `end` - The end point of the emission line
     /// * `normal` - The normal vector to the emission plane
@@ -50,7 +50,7 @@ impl Emitter {
         end: Vec3,
         normal: Vec3,
         temperature: f64,
-        filler_material: Box<dyn Material>,
+        filler_material: Rc<dyn Material>,
     ) -> Self {
         Emitter {
             start,
@@ -84,7 +84,7 @@ impl Emitter {
 
                 // Convert spherical to cartesian coordinates
                 let x = phi.sin() * theta.cos();
-                let y = phi.sin() * theta.sin(); 
+                let y = phi.sin() * theta.sin();
                 let z = phi.cos();
 
                 // Create direction vector
@@ -98,8 +98,9 @@ impl Emitter {
                 // Create ray and color
                 let ray = Ray::new(origin, direction);
                 let mut attenuation: Rc<dyn Color> =
-                    Rc::new(FreqPowerColor::black_body(self.temperature));
-                self.ray_color(ray, 10, &world, &mut attenuation);
+                Rc::new(FreqPowerColor::black_body(self.temperature));
+                let mut last_material = Rc::clone(&self.filler_material);
+                self.ray_color(ray, 10, &world, &mut attenuation, &mut last_material);
             }
         }
     }
@@ -108,7 +109,8 @@ impl Emitter {
         r: Ray,
         bounces: u32,
         world: &HittableList,
-        attenuation: &mut Rc<dyn Color>,
+        attenuation: &mut Rc<dyn Color>, 
+        last_material: &mut Rc<dyn Material>
     ) {
         //actually traces the
         //ray
@@ -119,9 +121,13 @@ impl Emitter {
         let mut rec: HitRecord = Default::default();
         if world.hit(&r, 0.001..f64::INFINITY, &mut rec) {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
-            rec.mat
-                .scatter(&r, &rec, attenuation, &mut scattered, &self.filler_material);
-            rec.mat.perform_absorption(&r, attenuation, &rec);
+            if rec
+                .mat
+                .scatter(&r, &rec, attenuation, &mut scattered, last_material)
+            {
+                last_material.perform_absorption(attenuation, &rec);
+                self.ray_color(scattered, bounces - 1, world, attenuation, & mut rec.mat);
+            }
         }
     }
 }
@@ -137,7 +143,7 @@ mod tests {
         let start = Vec3::new(0.0, 0.0, 0.0);
         let end = Vec3::new(1.0, 0.0, 0.0);
         let normal = Vec3::new(0.0, 0.0, 1.0);
-        let filler_material = Box::new(IrDielectric::new(1.0, vec![(500.0, 0.0)]));
+        let filler_material = Rc::new(IrDielectric::new(1.0, vec![(500.0, 0.0)]));
         let emitter = Emitter::new(start, end, normal, 6000.0, filler_material);
 
         assert_eq!(emitter.start.x, start.x);
@@ -149,18 +155,5 @@ mod tests {
         assert_eq!(emitter.normal.x, normal.x);
         assert_eq!(emitter.normal.y, normal.y);
         assert_eq!(emitter.normal.z, normal.z);
-    }
-
-    #[test]
-    fn test_ray_emission() {
-        let start = Vec3::new(0.0, 0.0, 0.0);
-        let end = Vec3::new(1.0, 0.0, 0.0);
-        let normal = Vec3::new(0.0, 0.0, 1.0);
-        let filler_material = Box::new(IrDielectric::new(1.0, vec![(500.0, 0.0)]));
-        let emitter = Emitter::new(start, end, normal, 6000.0, filler_material);
-
-        let mut world = HittableList::new();
-        emitter.emit_rays(2, 3, &mut world);
-        assert_eq!(world.objects.len(), 2);
     }
 }

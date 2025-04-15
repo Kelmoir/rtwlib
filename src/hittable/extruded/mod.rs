@@ -255,7 +255,7 @@ mod tests {
         );
     }
     #[test]
-    fn test_polypoint_hit() {
+    fn test_polygon_hit() {
         let mat = Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.5))));
 
         // Create a regular hexagon with radius 2.0

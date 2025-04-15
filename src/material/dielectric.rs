@@ -26,7 +26,7 @@ impl Material for Dielectric {
         rec: &HitRecord,
         attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
-        _last_material: &Box<dyn Material>,
+        _last_material: &mut Rc<dyn Material>,
     ) -> bool {
         *attenuation = Rc::new(RgbColor::new(1., 1., 1.));
 
@@ -54,7 +54,6 @@ impl Material for Dielectric {
     }
     fn perform_absorption(
         &self,
-        _relevant_ray: &Ray,
         _attenuation: &mut Rc<dyn Color>,
         _last_hit: &HitRecord,
     )

@@ -95,7 +95,7 @@ pub struct Camera {
     defocus_disc_u: Vec3,
     defocus_disc_v: Vec3,
     /// The material, the scene is filled with, before accounting for any other items.
-    pub filler_material: Box<dyn Material>,
+    pub filler_material: Rc<dyn Material>,
     /// The sky object, used to render the background of the scene
     pub sky: Box<dyn Sky>,
 }
@@ -242,8 +242,9 @@ impl Camera {
         if world.hit(&r, 0.001..f64::INFINITY, &mut rec) {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
             let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::from(1.));
+            let mut last_material = Rc::clone(&self.filler_material);
 
-            if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered, &self.filler_material) {
+            if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered, &mut last_material) {
                 //does bounce/scatter for materials of hit object
                 return attenuation.mul_rgb(self.ray_color(scattered, bounces - 1, world));
             }
@@ -284,7 +285,7 @@ impl Default for Camera {
             w: Vec3::from(0.0),
             defocus_disc_u: Vec3::from(0.0),
             defocus_disc_v: Vec3::from(0.0),
-            filler_material: Box::new(Dielectric::new(1.0)), //Per default, we fill the scene with nothing, as in vacuum
+            filler_material: Rc::new(Dielectric::new(1.0)), //Per default, we fill the scene with nothing, as in vacuum
             sky: Box::new(GradientSky {
                 start: RgbColor::new(0.5, 0.7, 1.0),
                 end: RgbColor::new(1.0, 1.0, 1.0),

@@ -47,7 +47,7 @@ pub trait Material: Debug {
         _rec: &HitRecord,
         _attenuation: &mut Rc<dyn Color>,
         _scattered: &mut Ray,
-        _last_material: &Box<dyn Material>,
+        _last_material: &mut Rc<dyn Material>,
     ) -> bool {
         false
     }
@@ -58,7 +58,6 @@ pub trait Material: Debug {
     /// This performs any absorption that happened between the last and the current hit
     fn perform_absorption(
         &self,
-        _relevant_ray: &Ray,
         _attenuation: &mut Rc<dyn Color>,
         _last_hit: &HitRecord,
     )

@@ -22,7 +22,7 @@ impl Material for PerfectMirror {
         rec: &HitRecord,
         _attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
-        _last_material: &Box<dyn Material>,
+        _last_material: &mut Rc<dyn Material>,
     ) -> bool {
         let reflected: Vec3 = r_in.direction.reflect(&rec.normal);
         *scattered = Ray::new(rec.p, reflected);

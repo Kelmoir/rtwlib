@@ -36,7 +36,7 @@ impl Material for Detector {
         _rec: &HitRecord,
         _attenuation: &mut Rc<dyn Color>,
         _scattered: &mut Ray,
-        _last_material: &Box<dyn Material>,
+        _last_material: &mut Rc<dyn Material>,
     ) -> bool {
         // Calculate hit position relative to detector dimensions
         let hit_pos = _rec.p;
@@ -113,9 +113,9 @@ mod tests {
         
         let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::new(1.0, 1.0, 1.0));
         let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
-        let last_material: Box<dyn Material> = Box::new(Detector::new(1, 1));
+        let mut last_material: Rc<dyn Material> = Rc::new(Detector::new(1, 1));
 
-        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &last_material);
+        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &mut last_material);
 
         // Center hit should record energy
         let texture = detector.get_texture();
@@ -132,9 +132,9 @@ mod tests {
         
         let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::new(1.0, 1.0, 1.0));
         let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
-        let last_material: Box<dyn Material> = Box::new(Detector::new(1, 1));
+        let mut last_material: Rc<dyn Material> = Rc::new(Detector::new(1, 1));
 
-        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &last_material);
+        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &mut last_material);
 
         // Out of bounds hit should not affect received energy
         assert_eq!(detector.get_received_energy(), 0.0);
@@ -149,9 +149,9 @@ mod tests {
         
         let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::new(2.0, 2.0, 2.0));
         let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
-        let last_material: Box<dyn Material> = Box::new(Detector::new(1, 1));
+        let mut last_material: Rc<dyn Material> = Rc::new(Detector::new(1, 1));
 
-        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &last_material);
+        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &mut last_material);
 
         // Texture should be normalized
         let texture = detector.get_texture();

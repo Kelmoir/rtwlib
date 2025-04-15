@@ -34,7 +34,7 @@ impl Material for Lambertian {
         rec: &HitRecord,
         attenuation: &mut Rc<dyn Color>,
         scattered: &mut Ray,
-        _last_material: &Box<dyn Material>,
+        _last_material: &mut Rc<dyn Material>,
     ) -> bool {
         let mut scatter_direction = rec.normal + (Vec3::random_normalized()); //on hit, send the ray in a random direction ( on the surface of the sphere )
 
@@ -43,8 +43,8 @@ impl Material for Lambertian {
             scatter_direction = rec.normal
         }
 
-        *scattered = Ray::new(rec.p, scatter_direction); //send a new ray in the sactter direction
-                                                         //from from hitpoint (rec.p)
+        *scattered = Ray::new(rec.p, scatter_direction); //send a new ray in the scatter direction
+                                                         //from from hit point (rec.p)
         *attenuation = self.albedo.clone();
         true
     }
