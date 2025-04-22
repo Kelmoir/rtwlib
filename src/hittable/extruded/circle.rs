@@ -4,6 +4,8 @@
 //! A positive radius defines the inside of the circle as the inside of the object, 
 //! a negative radius defines the outside of the circle as the inside of the object.
 //!
+use std::f64::consts::PI;
+
 use super::ExtrudableOutline;
 use crate::{
     ray::Ray,
@@ -92,12 +94,9 @@ impl ExtrudableOutline for Circle {
             // Calculate points on rays
             let p1 = Ray::new(self.center, normal).at(t);
             let p2 = ray.at(*s);
-            // Calculate the normal of the circle, while taking into account, where the outside is supposed to be.
-            let normal = ((p2 - p1) * self.radius).normalized();
-
             // Verify distance        // Verify distance
             if (p1 - p2).length().abs() - distance < f64::EPSILON && t >= 0.0 && t <= height {
-                solutions.push((t, *s, normal));
+                solutions.push((t, *s, p2));
             }
         }
         solutions
@@ -127,6 +126,28 @@ impl ExtrudableOutline for Circle {
         // Calculate intersection ray length
         Some(t)
     }
+    fn get_position_of_hit(&self, hit: Vec3, normal: Vec3, height: f64) -> (f64,f64){
+        // Project hit position onto plane perpendicular to normal
+        let t = dot(&(hit - self.center), &normal);
+        let projected_point = hit - t * normal;
+        
+        // Create a reference direction in the plane (e.g., x-axis)
+        let ref_dir = if normal.x.abs() > 0.9 { Vec3::new(0.0, 1.0, 0.0) } else { Vec3::new(1.0, 0.0, 0.0) };
+        let ref_dir = (ref_dir - normal * dot(&ref_dir, &normal)).normalized();
+        
+        // Get vector from center to projected point
+        let mut to_point = projected_point - self.center;
+        if to_point.length() > f64::EPSILON {
+            to_point = to_point.normalized();
+        }
+        // Calculate angle using dot product
+        let angle = dot(&to_point, &ref_dir).acos();
+        
+        (angle/(2.0*PI), t/height)
+    }
+    fn get_origin(&self) -> Vec3 {
+        self.center
+    }
 
     fn as_string(&self) -> String {
         format!(
@@ -143,5 +164,42 @@ impl ExtrudableOutline for Circle {
             self.center.z.to_string(),
             self.radius.to_string(),
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_position_of_hit() {
+        let circle = Circle::new(Vec3::new(0.0, 0.0, 0.0), 1.0);
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+        let height = 2.0;
+
+        // Test point on positive x-axis
+        let hit_point = Vec3::new(1.0, 0.0, 1.0);
+        let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
+        assert!((u - 0.0).abs() < f64::EPSILON, "u should be 0 for point on reference direction"); // u should be 0 for point on reference direction
+        assert!((v - 0.5).abs() < f64::EPSILON, "v should be 0.5 for point halfway up"); // v should be 0.5 for point halfway up
+
+        // Test point on positive y-axis
+        let hit_point = Vec3::new(0.0, 1.0, 0.5);
+        let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
+        assert!((u - 0.25).abs() < f64::EPSILON, "u should be 0.25 for 90 degrees"); // u should be 0.25 for 90 degrees
+        assert!((v - 0.25).abs() < f64::EPSILON, "v should be 0.25 for point quarter way up"); // v should be 0.25 for point quarter way up
+
+        // Test point on negative x-axis
+        let hit_point = Vec3::new(-1.0, 0.0, 0.0);
+        let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
+        assert!((u - 0.5).abs() < f64::EPSILON, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
+        assert!((v - 0.0).abs() < f64::EPSILON, "v should be 0 for point at bottom"); // v should be 0 for point at bottom
+
+        // Test with different normal direction
+        let normal = Vec3::new(1.0, 0.0, 0.0);
+        let hit_point = Vec3::new(1.0, -1.0, 0.0);
+        let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
+        assert!((u - 0.5).abs() < f64::EPSILON, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
+        assert!((v - 0.5).abs() < f64::EPSILON, "v should be 0.5 for point halfway up"); // v should be 0.5 for point halfway up
     }
 }

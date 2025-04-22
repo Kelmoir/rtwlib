@@ -45,6 +45,8 @@ impl Emitter {
     /// * `start` - The start point of the emission line
     /// * `end` - The end point of the emission line
     /// * `normal` - The normal vector to the emission plane
+    /// * `temperature` - The temperature of the emitter in Kelvin
+    /// * `filler_material` - The material, the scene is filled with, before accounting for any other items.
     pub fn new(
         start: Vec3,
         end: Vec3,
@@ -69,7 +71,11 @@ impl Emitter {
 
         // Generate n points along the line
         for i in 0..n {
-            let t = (i as f64) / ((n - 1) as f64);
+            let t = if n <= 1 {
+                0.5
+            } else {
+                (i as f64) / ((n - 1) as f64)
+            };
             let origin = self.start + (self.end - self.start) * t;
 
             // Generate m rays from each point
@@ -119,7 +125,7 @@ impl Emitter {
             return;
         }
         let mut rec: HitRecord = Default::default();
-        if world.hit(&r, 0.001..f64::INFINITY, &mut rec) {
+        if world.hit(&r, 0.001..1e10, &mut rec) {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
             if rec
                 .mat

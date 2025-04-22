@@ -4,7 +4,7 @@
 //! The outlines are defined by the [`ExtrudableOutline`] trait.
 //!
 
-use std::{fmt::Debug, ops::Range, rc::Rc};
+use std::{f64, fmt::Debug, ops::Range, rc::Rc};
 
 use crate::{material::Material, ray::Ray, vec3::Vec3};
 
@@ -23,7 +23,7 @@ pub trait ExtrudableOutline: Debug {
     /// * `normal` - The normal vector of the extruded object.
     ///
     /// # Returns
-    /// (t, s, normal) for each hit, empty list when no hit is detected
+    /// (t, s, position) for each hit, empty list when no hit is detected
     fn get_wall_hits(&self, r: &Ray, height: f64, normal: Vec3) -> Vec<(f64, f64, Vec3)>;
     /// Get the hit of the outline with the plane of the extruded object.
     ///
@@ -36,6 +36,22 @@ pub trait ExtrudableOutline: Debug {
     /// # Returns
     /// Some(t) for the hit, None when no hit is detected
     fn get_plane_hit(&self, ray: &Ray, height: f64, normal: Vec3) -> Option<f64>;
+    /// Get the position of the hit on the outline.
+    ///
+    /// !Note: This expects that a hit was already established!
+    /// # Arguments
+    ///
+    /// * `hit` - The hit position.
+    /// * `normal` - The normal of the plane.   
+    ///
+    /// # Returns
+    /// (pos, height) for the hit Values [0 .. 1] for pos and [0 .. 1] for height
+    fn get_position_of_hit(&self, hit: Vec3, normal: Vec3, height: f64) -> (f64, f64);
+    /// Get the origin of the outline.
+    ///
+    /// # Returns
+    /// The origin of the outline.
+    fn get_origin(&self) -> Vec3;
     /// Returns a string representation of the object.
     fn as_string(&self) -> String;
     /// Returns a vector of strings representing the object.
@@ -95,14 +111,14 @@ impl Hittable for ExtrudedObject {
             let mut plane_hit: (f64, f64, Vec3) =
                 (f64::INFINITY, f64::INFINITY, Vec3::new(0.0, 0.0, 0.0));
             for outline in self.outlines.iter() {
-                if let Some(hit) = outline.get_plane_hit(r, item.0, item.1) {
+                if let Some(hit) = outline.get_plane_hit(r, item.0.clone(), item.1.clone()) {
                     plane_hit = (item.0, hit, item.1);
                 } else {
                     plane_hit = (f64::INFINITY, f64::INFINITY, Vec3::new(0.0, 0.0, 0.0));
                     break;
                 }
             }
-            if plane_hit.0 != f64::INFINITY {
+            if plane_hit.0 != f64::INFINITY  && plane_hit.1 != f64::INFINITY && plane_hit.0 != f64::NAN && plane_hit.1 != f64::NAN  {
                 hits.push(plane_hit);
             }
         }
@@ -122,11 +138,14 @@ impl Hittable for ExtrudedObject {
         if !ray_t.surrounds(first_hit.1) {
             return false;
         }
+        let object_spine = Ray::new(self.outlines[0].get_origin(), self.normal);
+        let hit_normal = first_hit.2 - object_spine.at(first_hit.1);
         // Record the hit information
         rec.t = first_hit.1;
-        rec.p = r.at(first_hit.0);
-        rec.set_face_normal(r, &first_hit.2);
+        rec.p = r.at(first_hit.1);
+        rec.set_face_normal(r, &hit_normal);
         rec.set_material(Rc::clone(&self.mat));
+        rec.position = self.outlines[0].get_position_of_hit(first_hit.2, self.normal, self.height);
 
         true
     }

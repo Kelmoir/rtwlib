@@ -39,15 +39,11 @@ impl Material for Detector {
         _last_material: &mut Rc<dyn Material>,
     ) -> bool {
         // Calculate hit position relative to detector dimensions
-        let hit_pos = _rec.p;
+        let hit_pos = _rec.position;
         
         // Assuming detector is in XY plane, normalize coordinates to [0,1] range
-        let x = (hit_pos[0] + 1.0) * 0.5; 
-        let y = (hit_pos[1] + 1.0) * 0.5;
-        
-        // Convert to pixel coordinates
-        let px = (x * (self.width as f64)) as i32;
-        let py = (y * (self.height as f64)) as i32;
+        let px = ((hit_pos.0 * self.width as f64) + 0.5) as i32;
+        let py = ((hit_pos.1 * self.height as f64) + 0.5) as i32;
         
         // Bounds check
         if px >= 0 && px < self.width && py >= 0 && py < self.height {

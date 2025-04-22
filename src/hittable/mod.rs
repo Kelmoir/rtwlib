@@ -28,6 +28,9 @@ pub struct HitRecord {
     pub t: f64,
     /// A boolean indicating if the hit was on the front face of the object
     pub front_face: bool,
+    /// The position of the hit on the object in an coordination system of the object.
+    /// (pos, height) for the hit Values [0 .. 1] for pos and [0 .. 1] for height
+    pub position: (f64,f64),
 }
 /// A `HittableList` is a struct that contains a list of `Hittable` objects, and implements the `Hittable` trait itself. Mostly useful to quickly test all objects in a scene for hits. Use it for scenes. idk
 /// # Example
@@ -71,7 +74,8 @@ impl Default for HitRecord {
             normal: Vec3::from(0.0),
             mat: Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.5)))),
             t: 0.0,
-            front_face: false,
+            front_face: false,  
+            position: (0.0,0.0),
         }
     }
 }

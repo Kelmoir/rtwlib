@@ -25,6 +25,9 @@ pub struct IrDielectric {
 
 impl IrDielectric {
     /// Creates a new `Dielectric` material with the given index of refraction.
+    /// Parameters:
+    /// - optical_density: The index of refraction of the material.
+    /// - absorption_spectrum: A vector of tuples, where the first element is the wavelength in nanometers and the second element is the absorption coefficient in cm^-1.
     pub fn new(optical_density: f64, absorption_spectrum: Graph) -> Self {
         IrDielectric {
             optical_density,

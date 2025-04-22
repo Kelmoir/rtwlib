@@ -112,7 +112,7 @@ impl ExtrudableOutline for Polygon {
                         let proj = dot(&(hit_point - p1), &edge) / dot(&edge, &edge);
                         
                         if proj >= 0.0 && proj <= 1.0 {
-                            hits.push((t, height_along_normal, wall_normal));
+                            hits.push((t, height_along_normal, hit_point));
                         }
                     }
                 }
@@ -137,6 +137,39 @@ impl ExtrudableOutline for Polygon {
         }
         
         None
+    }
+
+    fn get_position_of_hit(&self, hit: Vec3, normal: Vec3, height: f64) -> (f64, f64) {
+        // Project hit position onto plane perpendicular to normal
+        let t = dot(&(hit - self.center), &normal);
+        let projected_point = hit - t * normal;
+        
+        // Calculate position along outline by finding closest point
+        let mut min_dist = f64::INFINITY;
+        let mut pos = 0.0;
+        
+        for i in 0..self.points.len() {
+            let p1 = self.points[i];
+            let p2 = self.points[(i + 1) % self.points.len()];
+            let edge = p2 - p1;
+            
+            // Project point onto edge
+            let proj = dot(&(projected_point - p1), &edge) / dot(&edge, &edge);
+            if proj >= 0.0 && proj <= 1.0 {
+                let closest = p1 + edge * proj;
+                let dist = (projected_point - closest).length();
+                if dist < min_dist {
+                    min_dist = dist;
+                    pos = (i as f64 + proj) / self.points.len() as f64;
+                }
+            }
+        }
+        
+        (pos, t/height)
+    }
+
+    fn get_origin(&self) -> Vec3 {
+        self.center
     }
 
     fn as_string(&self) -> String {
