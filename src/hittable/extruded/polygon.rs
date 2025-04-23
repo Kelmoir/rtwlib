@@ -105,14 +105,14 @@ impl ExtrudableOutline for Polygon {
                 
                 if t > 0.0 {
                     let hit_point = r.at(t);
-                    let height_along_normal = dot(&(hit_point - p1), &normal);
+                    let height_along_normal: f64 = dot(&(hit_point - p1), &normal);
                     
                     if height_along_normal >= 0.0 && height_along_normal <= height {
                         // Project hit point onto edge to check if we're between vertices
                         let proj = dot(&(hit_point - p1), &edge) / dot(&edge, &edge);
                         
                         if proj >= 0.0 && proj <= 1.0 {
-                            hits.push((t, height_along_normal, hit_point));
+                            hits.push((height_along_normal, t, wall_normal));
                         }
                     }
                 }

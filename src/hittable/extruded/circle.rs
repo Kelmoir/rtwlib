@@ -81,22 +81,20 @@ impl ExtrudableOutline for Circle {
 
         // These s values represent where the projected ray reaches the required distance from origin
         // Calculate corresponding t values
-        let mut solutions = Vec::new();
-        let r = ray.origin - self.center; // Vector between origins
-        let r1 = dot(&normal, &r);
-        let a11 = dot(&normal, &normal);
-        let a12 = dot(&normal, &ray.direction);
+        let mut solutions = Vec::new();      
 
         // Calculate corresponding t values
         for s in [s1, s2].iter() {
-            let t = -(s * a12 - r1) / a11;
+            // Calculate the hit point and its height along the normal direction
+            let hit_point = ray.at(*s);
+            let t = dot(&(hit_point - self.center), &normal);
 
             // Calculate points on rays
             let p1 = Ray::new(self.center, normal).at(t);
             let p2 = ray.at(*s);
-            // Verify distance        // Verify distance
-            if (p1 - p2).length().abs() - distance < f64::EPSILON && t >= 0.0 && t <= height {
-                solutions.push((t, *s, p2));
+            // Verify distance
+            if (p1 - p2).length().abs() - distance < 1e-6 && t >= 0.0 && t <= height {
+                solutions.push((t, *s, p2-p1));
             }
         }
         solutions
@@ -201,5 +199,64 @@ mod tests {
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
         assert!((u - 0.5).abs() < f64::EPSILON, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
         assert!((v - 0.5).abs() < f64::EPSILON, "v should be 0.5 for point halfway up"); // v should be 0.5 for point halfway up
+    }
+    #[test]
+    fn test_get_wall_hits() {
+        let circle = Circle::new(Vec3::new(0.0, 0.0, 0.0), 1.0);
+        let height = 2.0;
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+
+        // Ray hitting the wall from outside
+        let ray = Ray::new(Vec3::new(2.0, 0.0, 2.0), Vec3::new(-1.0, 0.0, -1.0).normalized());
+        let hits = circle.get_wall_hits(&ray, height, normal);
+        assert_eq!(hits.len(), 1);
+        let (h, t, n) = hits[0];
+        assert!((h - 1.0).abs() < 1e-6, "Height at hit point 1"); // Height at hit point
+        assert!((t - 1.414).abs() < 1e-2, "Distance to hit 1"); // Distance to hit
+        assert!((n- Vec3::new(1.0, 0.0, 0.0)).length()< 1e-6, "Normal points outward 1"); // Normal points outward
+
+        // Ray missing the wall
+        let ray = Ray::new(Vec3::new(2.0, 2.0, 1.0), Vec3::new(-1.0, 0.0, 0.0));
+        let hits: Vec<(f64, f64, Vec3)> = circle.get_wall_hits(&ray, height, normal);
+        assert_eq!(hits.len(), 0);
+
+        // Ray hitting wall from inside (should get two hits)
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0));
+        let hits = circle.get_wall_hits(&ray, height, normal);
+        assert_eq!(hits.len(), 2);
+        assert!((hits[0].0 - 1.0).abs() < 1e-6, "Height at first hit 2"); // Height at first hit
+        assert!((hits[0].1 - 1.0).abs() < 1e-6, "Distance to first hit 2"); // Distance to first hit
+        assert!((hits[0].2- Vec3::new(1.0, 0.0, 0.0)).length()< 1e-6, "First normal points outward 2"); // First normal points outward
+    }
+
+    #[test]
+    fn test_get_plane_hit() {
+        let circle = Circle::new(Vec3::new(0.0, 0.0, 0.0), 1.0);
+        
+        // Ray hitting top plane from above
+        let ray = Ray::new(Vec3::new(0.5, 0.0, 3.0), Vec3::new(0.0, 0.0, -1.0));
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+        let hit = circle.get_plane_hit(&ray, 2.0, normal);
+        assert!(hit.is_some());
+        assert!((hit.unwrap() - 1.0).abs() < f64::EPSILON); // Distance to hit
+
+        // Ray hitting bottom plane from below
+        let ray = Ray::new(Vec3::new(0.5, 0.0, -1.0), Vec3::new(0.0, 0.0, 1.0));
+        let normal = Vec3::new(0.0, 0.0, -1.0);
+        let hit = circle.get_plane_hit(&ray, 0.0, normal);
+        assert!(hit.is_some());
+        assert!((hit.unwrap() - 1.0).abs() < f64::EPSILON);
+
+        // Ray missing circle on plane (outside radius)
+        let ray = Ray::new(Vec3::new(2.0, 0.0, 3.0), Vec3::new(0.0, 0.0, -1.0));
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+        let hit = circle.get_plane_hit(&ray, 2.0, normal);
+        assert!(hit.is_none());
+
+        // Ray parallel to plane (should miss)
+        let ray = Ray::new(Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0));
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+        let hit = circle.get_plane_hit(&ray, 2.0, normal);
+        assert!(hit.is_none());
     }
 }

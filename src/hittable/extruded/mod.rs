@@ -23,7 +23,7 @@ pub trait ExtrudableOutline: Debug {
     /// * `normal` - The normal vector of the extruded object.
     ///
     /// # Returns
-    /// (t, s, position) for each hit, empty list when no hit is detected
+    /// (t, s, normal) for each hit, empty list when no hit is detected
     fn get_wall_hits(&self, r: &Ray, height: f64, normal: Vec3) -> Vec<(f64, f64, Vec3)>;
     /// Get the hit of the outline with the plane of the extruded object.
     ///
@@ -138,14 +138,12 @@ impl Hittable for ExtrudedObject {
         if !ray_t.surrounds(first_hit.1) {
             return false;
         }
-        let object_spine = Ray::new(self.outlines[0].get_origin(), self.normal);
-        let hit_normal = first_hit.2 - object_spine.at(first_hit.1);
         // Record the hit information
         rec.t = first_hit.1;
-        rec.p = r.at(first_hit.1);
-        rec.set_face_normal(r, &hit_normal);
+        rec.p = r.at(first_hit.1); // The point of the hit
+        rec.set_face_normal(r, &first_hit.2);
         rec.set_material(Rc::clone(&self.mat));
-        rec.position = self.outlines[0].get_position_of_hit(first_hit.2, self.normal, self.height);
+        rec.position = self.outlines[0].get_position_of_hit(rec.p, self.normal, self.height);
 
         true
     }
