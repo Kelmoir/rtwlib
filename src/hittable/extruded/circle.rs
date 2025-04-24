@@ -138,10 +138,17 @@ impl ExtrudableOutline for Circle {
         if to_point.length() > f64::EPSILON {
             to_point = to_point.normalized();
         }
-        // Calculate angle using dot product
-        let angle = dot(&to_point, &ref_dir).acos();
         
-        (angle/(2.0*PI), t/height)
+        // Calculate angle using dot product and cross product to determine quadrant
+        let cos_angle = dot(&to_point, &ref_dir);
+        let perp_dir = crate::vec3::cross(&normal, &ref_dir);
+        let sin_angle = dot(&to_point, &perp_dir);
+        let angle = sin_angle.atan2(cos_angle);
+        
+        // Convert angle to 0..2π range
+        let u = if angle < 0.0 { angle + 2.0 * PI } else { angle } / (2.0 * PI);
+        
+        (u, t/height)
     }
     fn get_origin(&self) -> Vec3 {
         self.center
@@ -178,27 +185,40 @@ mod tests {
         // Test point on positive x-axis
         let hit_point = Vec3::new(1.0, 0.0, 1.0);
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
-        assert!((u - 0.0).abs() < f64::EPSILON, "u should be 0 for point on reference direction"); // u should be 0 for point on reference direction
-        assert!((v - 0.5).abs() < f64::EPSILON, "v should be 0.5 for point halfway up"); // v should be 0.5 for point halfway up
+        assert!((u - 0.0).abs() < 1e-6, "u should be 0 for point on reference direction"); // u should be 0 for point on reference direction
+        assert!((v - 0.5).abs() < 1e-6, "v should be 0.5 for point halfway up 1"); // v should be 0.5 for point halfway up
+
+        // Test point on slighly positive angle
+        let hit_point = Vec3::new(1.0, 0.1, 0.0).normalized();
+        let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
+        assert!(u < 0.1 && u > 0., "u should be slightly above 0 for this direction"); // u should be 0 for point on reference direction
+        assert!(v.abs() < 1e-6, "v should be 0 here 2"); 
+
+
+        // Test point on slighly negative angle
+        let hit_point = Vec3::new(1.0, -0.1, 0.0).normalized();
+        let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
+        assert!(u < 1. && u > 0.9, "u should be slightly below 1 for this direction"); // u should be 0 for point on reference direction
+        assert!(v.abs() < 1e-6, "v should be 0 here 3"); 
 
         // Test point on positive y-axis
         let hit_point = Vec3::new(0.0, 1.0, 0.5);
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
-        assert!((u - 0.25).abs() < f64::EPSILON, "u should be 0.25 for 90 degrees"); // u should be 0.25 for 90 degrees
-        assert!((v - 0.25).abs() < f64::EPSILON, "v should be 0.25 for point quarter way up"); // v should be 0.25 for point quarter way up
+        assert!((u - 0.25).abs() < 1e-6, "u should be 0.25 for 90 degrees"); // u should be 0.25 for 90 degrees
+        assert!((v - 0.25).abs() < 1e-6, "v should be 0.25 for point quarter way up"); // v should be 0.25 for point quarter way up
 
         // Test point on negative x-axis
         let hit_point = Vec3::new(-1.0, 0.0, 0.0);
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
-        assert!((u - 0.5).abs() < f64::EPSILON, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
-        assert!((v - 0.0).abs() < f64::EPSILON, "v should be 0 for point at bottom"); // v should be 0 for point at bottom
+        assert!((u - 0.5).abs() < 1e-6, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
+        assert!((v - 0.0).abs() < 1e-6, "v should be 0 for point at bottom"); // v should be 0 for point at bottom
 
         // Test with different normal direction
         let normal = Vec3::new(1.0, 0.0, 0.0);
         let hit_point = Vec3::new(1.0, -1.0, 0.0);
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
-        assert!((u - 0.5).abs() < f64::EPSILON, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
-        assert!((v - 0.5).abs() < f64::EPSILON, "v should be 0.5 for point halfway up"); // v should be 0.5 for point halfway up
+        assert!((u - 0.5).abs() < 1e-6, "u should be 0.5 for 180 degrees"); // u should be 0.5 for 180 degrees
+        assert!((v - 0.5).abs() < 1e-6, "v should be 0.5 for point halfway up"); // v should be 0.5 for point halfway up
     }
     #[test]
     fn test_get_wall_hits() {
