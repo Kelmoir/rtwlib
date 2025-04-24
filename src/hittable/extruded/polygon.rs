@@ -168,10 +168,6 @@ impl ExtrudableOutline for Polygon {
         (pos, t/height)
     }
 
-    fn get_origin(&self) -> Vec3 {
-        self.center
-    }
-
     fn as_string(&self) -> String {
         format!("PolyPoint with {} vertices", self.points.len())
     }
@@ -184,3 +180,77 @@ impl ExtrudableOutline for Polygon {
         info
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::vec3::Vec3;
+
+    #[test]
+    fn test_polygon_hit() {
+        let points = vec![
+            Vec3::new(1.0, 1.0, 0.0),
+            Vec3::new(-1.0, 1.0, 0.0),
+            Vec3::new(-1.0, -1.0, 0.0),
+            Vec3::new(1.0, -1.0, 0.0),
+        ];
+        let polygon = Polygon::new(points);
+        let height = 2.0;
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+
+        // Test hit from above
+        let origin = Vec3::new(0.0, 0.0, 3.0);
+        let direction = Vec3::new(0.0, 0.0, -1.0);
+        let ray = Ray::new(origin, direction);
+        let hit = polygon.get_wall_hits(&ray, height, normal);
+        assert!(hit.is_empty(), "Hit should be empty 1");
+        let hit = polygon.get_plane_hit(&ray, height, normal);
+        assert!(hit.is_some(), "Hit should be some 1");
+
+        // Test miss
+        let origin = Vec3::new(2.0, 2.0, 3.0);
+        let direction = Vec3::new(0.0, 0.0, -1.0);
+        let ray = Ray::new(origin, direction);
+        let hit = polygon.get_wall_hits(&ray, height, normal);
+        assert!(hit.is_empty(), "Hit should be empty 2");
+        let hit = polygon.get_plane_hit(&ray, height, normal);
+        assert!(hit.is_none(), "Hit should be none 2");
+
+        //Test hits from side
+        let origin = Vec3::new(2.0, 0.5, 1.0);
+        let direction = Vec3::new(-1.0, -0.2, 0.0).normalized();
+        let ray = Ray::new(origin, direction);
+        let hit = polygon.get_wall_hits(&ray, height, normal);
+        assert!(hit.len() == 2, "Hit should be 2  3");
+        assert!(dot(&hit[0].2, &Vec3::new(-1.0, 0.0, 0.0)) > 0.999, "Hit should be on the forward side");
+        assert!(dot(&hit[1].2, &Vec3::new(-1.0, 0.0, 0.0)) < -0.999, "Hit should be on the backward side");
+        let hit = polygon.get_plane_hit(&ray, height, normal);
+        assert!(hit.is_none(), "not hit the top or bottom");
+    }
+
+    #[test]
+    fn test_get_position_of_hit() {
+        let points = vec![
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::new(-1.0, 0.0, 0.0),
+            Vec3::new(0.0, -1.0, 0.0),
+        ];
+        let polygon = Polygon::new(points);
+
+        // Test hit at first edge
+        let mut hit_point = Vec3::new(0.5, 0.5, 1.0);
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+        let height = 2.0;
+        let (pos, t) = polygon.get_position_of_hit(hit_point, normal, height);
+        
+        assert!((pos - 0.125).abs() < 0.001); // Should be 1/8 around perimeter
+        assert!((t - 0.5).abs() < 0.001); // Should be halfway up
+
+        hit_point.y = -0.5;
+        let (pos, t) = polygon.get_position_of_hit(hit_point, normal, height);
+        assert!((pos - 0.875).abs() < 0.001); // Should be 7/8 around perimeter
+        assert!((t - 0.5).abs() < 0.001); // Should be halfway up
+    }
+}
+

@@ -47,11 +47,6 @@ pub trait ExtrudableOutline: Debug {
     /// # Returns
     /// (pos, height) for the hit Values [0 .. 1] for pos and [0 .. 1] for height
     fn get_position_of_hit(&self, hit: Vec3, normal: Vec3, height: f64) -> (f64, f64);
-    /// Get the origin of the outline.
-    ///
-    /// # Returns
-    /// The origin of the outline.
-    fn get_origin(&self) -> Vec3;
     /// Returns a string representation of the object.
     fn as_string(&self) -> String;
     /// Returns a vector of strings representing the object.

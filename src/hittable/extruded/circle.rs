@@ -150,9 +150,6 @@ impl ExtrudableOutline for Circle {
         
         (u, t/height)
     }
-    fn get_origin(&self) -> Vec3 {
-        self.center
-    }
 
     fn as_string(&self) -> String {
         format!(
