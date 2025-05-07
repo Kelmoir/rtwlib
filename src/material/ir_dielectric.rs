@@ -11,7 +11,7 @@ use crate::{
 ///! A dielectric material, refracts light, basically glass.
 use rand::Rng;
 
-///This describes the absorption spectrum of the Dielectric in (wavelength, a(l)/cm^-1)
+///This describes the absorption spectrum of the Dielectric in (wavelength [µm], a(l)/cm^-1)
 type DataPoint = (f64, f64);
 type Graph = Vec<DataPoint>;
 

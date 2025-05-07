@@ -252,5 +252,34 @@ mod tests {
         assert!((pos - 0.875).abs() < 0.001); // Should be 7/8 around perimeter
         assert!((t - 0.5).abs() < 0.001); // Should be halfway up
     }
+    #[test]
+    fn test_ray_away() {
+        let points = vec![
+            Vec3::new(-1.0, 100.0, 0.0),
+            Vec3::new(1.0, -100.0, 0.0),
+            Vec3::new(-11.0, -11.0, 0.0),
+        ];
+        let polygon = Polygon::new(points);
+        let height = 2.0;
+        let normal = Vec3::new(0.0, 0.0, 1.0);
+
+        
+        let origin = Vec3::new(0.001, 0.0, 1.0);
+        let directions = vec![
+            Vec3::new(1.0, 0.0, 0.),
+            Vec3::new(1.0, 1.0, 0.).normalized(),
+            Vec3::new(1.0, 1.0, 1.).normalized(),
+            Vec3::new(1.0, 0.0, 1.).normalized(),
+            Vec3::new(1.0, -1.0, 0.).normalized(),
+            Vec3::new(0.0, 1.0, 0.).normalized(),
+            Vec3::new(1.0, -1.0, -1.).normalized(),
+            Vec3::new(0.0, 0.0, -1.).normalized(),
+        ];
+        for direction in directions {
+            let ray = Ray::new(origin.clone(), direction);
+            let hit = polygon.get_wall_hits(&ray, height, normal);
+            assert!(hit.is_empty(), "Hit should be empty");
+        }
+    }
 }
 

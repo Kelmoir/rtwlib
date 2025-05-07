@@ -76,6 +76,11 @@ impl Detector {
         *self.received_energy.borrow()
     }
 
+    /// Resets the received energy to 0, but does not touch the texture
+    pub fn reset_received_energy(&self) {
+        *self.received_energy.borrow_mut() = 0.0;
+    }
+
     /// Get the texture of the detector
     /// The texture is a normalized version of the hit buffer
     pub fn get_texture(&self) -> Vec<f64> {

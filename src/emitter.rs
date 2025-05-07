@@ -71,11 +71,7 @@ impl Emitter {
 
         // Generate n points along the line
         for i in 0..n {
-            let t = if n <= 1 {
-                0.5
-            } else {
-                (i as f64) / ((n - 1) as f64)
-            };
+            let t = ((i+1) as f64) / ((n + 1) as f64);
             let origin = self.start + (self.end - self.start) * t;
 
             // Generate m rays from each point
@@ -127,11 +123,11 @@ impl Emitter {
         let mut rec: HitRecord = Default::default();
         if world.hit(&r, 0.001..1e10, &mut rec) {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
+            last_material.perform_absorption(attenuation, &rec);
             if rec
                 .mat
                 .scatter(&r, &rec, attenuation, &mut scattered, last_material)
             {
-                last_material.perform_absorption(attenuation, &rec);
                 self.ray_color(scattered, bounces - 1, world, attenuation, & mut rec.mat);
             }
         }
