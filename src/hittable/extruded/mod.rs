@@ -1,7 +1,7 @@
 //! A module for extruded objects.
-//! An extruded object is an object that is extruded from a list of outlines.
-//! The outlines are extruded along a normal vector, and the result is a 3-d object.
-//! The outlines are defined by the [`ExtrudableOutline`] trait.
+//! An extruded object is an object that is extruded from a 2-d outline.
+//! The outline is extruded along a normal vector, and the result is a 3-d object.
+//! The outline is defined by the [`ExtrudableOutline`] trait.
 //!
 
 use std::{f64, fmt::Debug, ops::Range, rc::Rc};
@@ -54,10 +54,10 @@ pub trait ExtrudableOutline: Debug {
 }
 
 #[derive(Debug)]
-/// A 3-d Object that is extruded from a list of 2-d outlines
+/// A 3-d Object that is extruded from a 2-d outline
 pub struct ExtrudedObject {
-    /// A list of outlines that make up the base shape, the Object is extruded from these outlines.
-    pub outlines: Vec<Rc<dyn ExtrudableOutline>>,
+    /// The outline that makes up the base shape, the Object is extruded from this outline.
+    pub outline: Rc<dyn ExtrudableOutline>,
     /// The height of the extruded object.
     pub height: f64,
     /// The normal of the extruded object.
@@ -69,7 +69,7 @@ pub struct ExtrudedObject {
 impl Clone for ExtrudedObject {
     fn clone(&self) -> Self {
         Self {
-            outlines: self.outlines.clone(),
+            outline: Rc::clone(&self.outline),
             height: self.height,
             normal: self.normal,
             mat: Rc::clone(&self.mat),
@@ -78,15 +78,15 @@ impl Clone for ExtrudedObject {
 }
 
 impl ExtrudedObject {
-    /// Creates a new ExtrudedObject from a list of outlines, a height, a normal vector and a material.
+    /// Creates a new ExtrudedObject from an outline, a height, a normal vector and a material.
     pub fn new(
-        outlines: Vec<Rc<dyn ExtrudableOutline>>,
+        outline: Rc<dyn ExtrudableOutline>,
         height: f64,
         normal: Vec3,
         mat: Rc<dyn Material>,
     ) -> Self {
         Self {
-            outlines,
+            outline,
             height,
             normal,
             mat,
@@ -99,24 +99,16 @@ impl Hittable for ExtrudedObject {
         use crate::utils::RangeExtensions;
 
         let mut hits: Vec<(f64, f64, Vec3)> = Vec::new();
-        for item in self.outlines.iter() {
-            hits.extend(item.get_wall_hits(r, self.height, self.normal));
-        }
+        hits.extend(self.outline.get_wall_hits(r, self.height, self.normal));
+        
         for item in vec![(0.0, -self.normal), (self.height, self.normal)] {
-            let mut plane_hit: (f64, f64, Vec3) =
-                (f64::INFINITY, f64::INFINITY, Vec3::new(0.0, 0.0, 0.0));
-            for outline in self.outlines.iter() {
-                if let Some(hit) = outline.get_plane_hit(r, item.0.clone(), item.1.clone()) {
-                    plane_hit = (item.0, hit, item.1);
-                } else {
-                    plane_hit = (f64::INFINITY, f64::INFINITY, Vec3::new(0.0, 0.0, 0.0));
-                    break;
+            if let Some(hit) = self.outline.get_plane_hit(r, item.0.clone(), item.1.clone()) {
+                if hit != f64::INFINITY && hit != f64::NAN {
+                    hits.push((item.0, hit, item.1));
                 }
             }
-            if plane_hit.0 != f64::INFINITY  && plane_hit.1 != f64::INFINITY && plane_hit.0 != f64::NAN && plane_hit.1 != f64::NAN  {
-                hits.push(plane_hit);
-            }
         }
+        
         if hits.len() == 0 {
             return false;
         }
@@ -138,18 +130,14 @@ impl Hittable for ExtrudedObject {
         rec.p = r.at(first_hit.1); // The point of the hit
         rec.set_face_normal(r, &first_hit.2);
         rec.set_material(Rc::clone(&self.mat));
-        rec.position = self.outlines[0].get_position_of_hit(rec.p, self.normal, self.height);
+        rec.position = self.outline.get_position_of_hit(rec.p, self.normal, self.height);
 
         true
     }
     fn as_string(&self) -> String {
         format!(
-            "[ ExtrudedObject ] from object: {:?}, height: {}",
-            self.outlines
-                .iter()
-                .map(|o| o.as_string())
-                .collect::<Vec<String>>()
-                .join(", "),
+            "[ ExtrudedObject ] from object: {}, height: {}",
+            self.outline.as_string(),
             self.height
         )
     }
@@ -157,11 +145,7 @@ impl Hittable for ExtrudedObject {
     fn as_info_vec(&self) -> Vec<String> {
         vec![
             "ExtrudedObject".to_string(),
-            self.outlines
-                .iter()
-                .map(|o| o.as_string())
-                .collect::<Vec<String>>()
-                .join(", "),
+            self.outline.as_string(),
             self.height.to_string(),
         ]
     }
@@ -179,16 +163,13 @@ mod tests {
     #[test]
     fn test_ring_hit() {
         let mat = Rc::new(Lambertian::new(Rc::new(RgbColor::new(0.5, 0.5, 0.5))));
-        let outer_circle = Circle::new(
+        let circle_outline = Circle::new(
             Vec3::new(0.0, 0.0, 0.0), // center
-            2.0,                      // radius
+            2.0,                      // outer radius
         );
-        let inner_circle = Circle::new(
-            Vec3::new(0.0, 0.0, 0.0), // center
-            -1.0,                     // radius
-        );
-        let ring = ExtrudedObject::new(
-            vec![Rc::new(outer_circle), Rc::new(inner_circle)],
+        
+        let cylinder = ExtrudedObject::new(
+            Rc::new(circle_outline),
             1.0,
             Vec3::new(0.0, 1.0, 0.0),
             mat,
@@ -198,23 +179,16 @@ mod tests {
         let r = Ray::new(Vec3::new(0.0, 2.0, 1.5), Vec3::new(0.0, -1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should hit the ring"
         );
 
-        // Ray hitting the cylinder wall
-        let r = Ray::new(Vec3::new(-5.0, 0.5, 0.0), Vec3::new(1.0, 0.0, 0.0));
-        let mut rec = HitRecord::default();
-        assert!(
-            ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
-            "Ray should hit the cylinder wall"
-        );
 
         // Ray hitting the cylinder wall inside from below
         let r = Ray::new(Vec3::new(-0.5, -0.5, 0.0), Vec3::new(1.0, 1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should hit the inside cylinder wall from below"
         );
 
@@ -222,7 +196,7 @@ mod tests {
         let r = Ray::new(Vec3::new(-0.5, 1.5, 0.0), Vec3::new(1.0, -1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should hit the inside cylinder wall from above"
         );
 
@@ -230,7 +204,7 @@ mod tests {
         let r = Ray::new(Vec3::new(3.0, 2.0, 0.0), Vec3::new(0.0, -1.0, 1.0));
         let mut rec = HitRecord::default();
         assert!(
-            !ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should miss the cylinder, outside the radius"
         );
 
@@ -238,23 +212,16 @@ mod tests {
         let r = Ray::new(Vec3::new(3.0, 2.0, 0.0), Vec3::new(-1.0, 1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should miss the cylinder, outside the radius / above the plane"
         );
 
-        // Ray missing the ring (inside inner radius)
-        let r = Ray::new(Vec3::new(0.5, 2.0, 0.0), Vec3::new(0.0, -1.0, 0.0));
-        let mut rec = HitRecord::default();
-        assert!(
-            !ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
-            "Ray should miss the cylinder, inside the radius"
-        );
 
         // Ray missing the cylinder (below)
         let r = Ray::new(Vec3::new(0.5, -0.5, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should miss the cylinder, below the plane"
         );
 
@@ -262,7 +229,7 @@ mod tests {
         let r = Ray::new(Vec3::new(0.5, 1.5, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !ring.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should miss the cylinder, above the plane"
         );
     }
@@ -282,7 +249,7 @@ mod tests {
 
         let height = 1.0;
         let poly = ExtrudedObject::new(
-            vec![Rc::new(Polygon::new(outer_points))],
+            Rc::new(Polygon::new(outer_points)),
             height,
             Vec3::new(0.0, 1.0, 0.0),
             mat,
