@@ -66,7 +66,7 @@ impl Emitter {
     /// Generate rays from the emitter
     /// n: number of points along the line
     /// m: number of rays per point
-    pub fn emit_rays(&self, n: u32, m: u32, world: &mut HittableList) {
+    pub fn emit_rays(&self, n: u32, m: u32, world: & HittableList) {
         let mut rng = rand::thread_rng();
 
         // Generate n points along the line
