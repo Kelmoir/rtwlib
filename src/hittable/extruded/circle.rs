@@ -202,14 +202,14 @@ mod tests {
         assert!((u - 0.0).abs() < 1e-6, "u should be 0 for point on reference direction"); // u should be 0 for point on reference direction
         assert!((v - 0.5).abs() < 1e-6, "v should be 0.5 for point halfway up 1"); // v should be 0.5 for point halfway up
 
-        // Test point on slighly positive angle
+        // Test point on slightly positive angle
         let hit_point = Vec3::new(1.0, 0.1, 0.0).normalized();
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
         assert!(u < 0.1 && u > 0., "u should be slightly above 0 for this direction"); // u should be 0 for point on reference direction
         assert!(v.abs() < 1e-6, "v should be 0 here 2"); 
 
 
-        // Test point on slighly negative angle
+        // Test point on slightly negative angle
         let hit_point = Vec3::new(1.0, -0.1, 0.0).normalized();
         let (u, v) = circle.get_position_of_hit(hit_point, normal, height);
         assert!(u < 1. && u > 0.9, "u should be slightly below 1 for this direction"); // u should be 0 for point on reference direction

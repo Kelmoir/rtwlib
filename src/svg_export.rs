@@ -1,3 +1,11 @@
+//! # SVG Export
+//! This module provides functionality to export a list of hittable objects to an SVG file.
+//! The SVG file can be used to visualize the scene and the objects in it.
+//! 
+//! # Functions
+//! * `export_to_svg` - Exports the HittableList to an SVG file
+//! 
+
 use crate::hittable::HittableList;
 use crate::vec3::Vec3;
 use std::fs::File;
