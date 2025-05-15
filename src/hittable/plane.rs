@@ -95,4 +95,10 @@ impl Hittable for Plane {
             )
         }
     }
+    fn contains_point(&self, _point: Vec3) -> bool {
+        false
+    }
+    fn get_material(&self) -> Rc<dyn Material> {
+        Rc::clone(&self.mat)
+    }
 }

@@ -102,6 +102,13 @@ impl Emitter {
                 let mut attenuation: Rc<dyn Color> =
                 Rc::new(FreqPowerColor::black_body(self.temperature));
                 let mut last_material = Rc::clone(&self.filler_material);
+                // Check if ray starts inside any object
+                for object in world.objects.iter() {
+                    if object.contains_point(origin) {
+                        last_material = Rc::clone(&object.get_material());
+                        break;
+                    }
+                }
                 self.ray_color(ray, 10, &world, &mut attenuation, &mut last_material);
             }
         }

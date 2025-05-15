@@ -176,6 +176,14 @@ impl ExtrudableOutline for Circle {
             self.center.x, self.center.y, radius, color
         )
     }
+
+    fn contains_point(&self, point: Vec3) -> bool {
+        (point - self.center).length() <= self.radius
+    }
+
+    fn center(&self) -> Vec3 {
+        self.center
+    }
 }
 
 #[cfg(test)]

@@ -207,6 +207,14 @@ impl ExtrudableOutline for Polygon {
             color
         )
     }
+
+    fn contains_point(&self, point: Vec3) -> bool {
+        self.is_point_inside(point)
+    }
+
+    fn center(&self) -> Vec3 {
+        self.center
+    }
 }
 
 #[cfg(test)]

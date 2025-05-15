@@ -135,6 +135,9 @@ impl Hittable for HittableList {
         }
         return hit_anything;
     }
+    fn get_material(&self) -> Rc<dyn Material> {
+        Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.5))))
+    }
 }
 /// The `Hittable` trait is used to define objects that can be hit by rays, it would be implemented by any object in a scene like a Sphere or Cube.
 pub trait Hittable: HittableClone {
@@ -159,6 +162,15 @@ pub trait Hittable: HittableClone {
     fn to_svg(&self, _normal: Vec3) -> String {
         String::new()
     }
+    /// Returns whether a point is inside the object.
+    /// * `point` - The point to check.
+    /// # Returns
+    /// A boolean indicating if the point is inside the object.
+    fn contains_point(&self, _point: Vec3) -> bool {
+        false
+    }
+    /// Returns the material of the object.
+    fn get_material(&self) -> Rc<dyn Material>; 
 }
 /// A trait to allow cloning of `Hittable` objects.
 pub trait HittableClone {

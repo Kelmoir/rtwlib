@@ -53,6 +53,10 @@ pub trait ExtrudableOutline: Debug {
     fn as_info_vec(&self) -> Vec<String>;
     /// Returns SVG code representation of the object.
     fn to_svg(&self, normal: Vec3, color: String) -> String;
+    /// Returns whether a point is inside the object.
+    fn contains_point(&self, point: Vec3) -> bool;
+    /// Returns the center of the object.
+    fn center(&self) -> Vec3;
 }
 
 #[derive(Debug)]
@@ -157,6 +161,17 @@ impl Hittable for ExtrudedObject {
         } else {
             String::new()
         }
+    }
+    fn contains_point(&self, point: Vec3) -> bool {
+        // Project point onto base plane
+        let t = dot(&(point - self.outline.center()), &self.normal);
+        let projected_point = point - t * self.normal;
+        
+        // Check if projected point is within outline
+        self.outline.contains_point(projected_point)
+    }
+    fn get_material(&self) -> Rc<dyn Material> {
+        Rc::clone(&self.mat)
     }
 }
 

@@ -82,4 +82,10 @@ impl Hittable for Sphere {
             self.center.x, self.center.y, self.radius, self.mat.get_svg_color()
         )
     }
+    fn contains_point(&self, point: Vec3) -> bool {
+        (point - self.center).length() <= self.radius
+    }
+    fn get_material(&self) -> Rc<dyn Material> {
+        Rc::clone(&self.mat)
+    }
 }
