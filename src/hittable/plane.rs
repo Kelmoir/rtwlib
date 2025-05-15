@@ -5,6 +5,7 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use crate::utils::RangeExtensions;
+use crate::vec3::cross;
 
 use super::dot;
 use super::HitRecord;
@@ -73,5 +74,25 @@ impl Hittable for Plane {
             self.origin.z.to_string(),
             format!("{:?}", self.mat),
         ]
+    }   
+    fn to_svg(&self, normal: Vec3) -> String {
+        if dot(&normal, &self.normal) < 0.001 { //If the plane is vertical to the viewport, reduce it to a line
+            let direction = cross(&self.normal, &normal).normalized();
+            let start = self.origin + direction * 50.;
+            let end = self.origin - direction * 50.;
+            format!(
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="0.1"/>"#,
+                start.x, start.y, end.x, end.y, self.mat.get_svg_color()
+            )
+        } else {
+            format!(
+                r#"<polygon points="{},{} {},{} {},{} {},{}" fill="{}" stroke="black" stroke-width="0.1"/>"#,
+                self.origin.x - 50.0, self.origin.y - 50.0,
+                self.origin.x + 50.0, self.origin.y - 50.0,
+                self.origin.x + 50.0, self.origin.y + 50.0,
+                self.origin.x - 50.0, self.origin.y + 50.0,
+                self.mat.get_svg_color()
+            )
+        }
     }
 }

@@ -61,6 +61,9 @@ impl Material for Dielectric {
     fn get_optical_density(&self) -> f64 {
         self.ior
     }
+    fn get_svg_color(&self)->String {
+        "lightblue".to_string()
+    }
 }
 
 //schlick approximation for reflectance at grazing angles

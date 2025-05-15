@@ -155,6 +155,10 @@ pub trait Hittable: HittableClone {
     fn as_info_vec(&self) -> Vec<String> {
         vec![]
     }
+    /// Returns SVG code representation of the object.
+    fn to_svg(&self, _normal: Vec3) -> String {
+        String::new()
+    }
 }
 /// A trait to allow cloning of `Hittable` objects.
 pub trait HittableClone {

@@ -44,4 +44,7 @@ impl Material for Metal {
         *attenuation = self.albedo.clone();
         return dot(&scattered.direction, &rec.normal) > 0.;
     }
+    fn get_svg_color(&self)->String {
+        "yellow".to_string()
+    }
 }

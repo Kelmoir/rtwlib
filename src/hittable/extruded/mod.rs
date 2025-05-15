@@ -6,7 +6,7 @@
 
 use std::{f64, fmt::Debug, ops::Range, rc::Rc};
 
-use crate::{material::Material, ray::Ray, vec3::Vec3};
+use crate::{material::Material, ray::Ray, vec3::{dot, Vec3}};
 
 use super::{HitRecord, Hittable};
 
@@ -51,6 +51,8 @@ pub trait ExtrudableOutline: Debug {
     fn as_string(&self) -> String;
     /// Returns a vector of strings representing the object.
     fn as_info_vec(&self) -> Vec<String>;
+    /// Returns SVG code representation of the object.
+    fn to_svg(&self, normal: Vec3, color: String) -> String;
 }
 
 #[derive(Debug)]
@@ -148,6 +150,13 @@ impl Hittable for ExtrudedObject {
             self.outline.as_string(),
             self.height.to_string(),
         ]
+    }
+    fn to_svg(&self, normal: Vec3) -> String {
+        if dot(&normal, &self.normal) > 0.999 {
+            self.outline.to_svg(normal, self.mat.get_svg_color())
+        } else {
+            String::new()
+        }
     }
 }
 

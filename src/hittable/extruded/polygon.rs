@@ -179,6 +179,34 @@ impl ExtrudableOutline for Polygon {
         }
         info
     }
+
+    fn to_svg(&self, normal: Vec3, color: String) -> String {
+        // Only draw if looking straight at polygon
+        if dot(&normal, &Vec3::new(0.0, 0.0, 1.0)) < 0.999 {
+            return String::new();
+        }
+
+        // Project points onto plane perpendicular to normal
+        let mut projected_points = Vec::new();
+        for point in &self.points {
+            let t = dot(&(*point - self.center), &normal);
+            let projected = *point - t * normal;
+            projected_points.push(projected);
+        }
+
+        // Create SVG polygon points string
+        let points_str = projected_points
+            .iter()
+            .map(|p| format!("{},{}", p.x, p.y))
+            .collect::<Vec<String>>()
+            .join(" ");
+
+        format!(
+            r#"<polygon points="{}" fill="{}" stroke="black" stroke-width="0.1"/>"#,
+            points_str,
+            color
+        )
+    }
 }
 
 #[cfg(test)]

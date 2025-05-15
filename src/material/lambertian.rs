@@ -48,4 +48,7 @@ impl Material for Lambertian {
         *attenuation = self.albedo.clone();
         true
     }
+    fn get_svg_color(&self)->String {
+        "red".to_string()
+    }
 }

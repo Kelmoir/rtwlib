@@ -167,6 +167,15 @@ impl ExtrudableOutline for Circle {
             self.radius.to_string(),
         ]
     }
+
+    fn to_svg(&self, _normal: Vec3, color: String) -> String {
+
+        let radius = self.radius.abs();
+        format!(
+            r#"<circle cx="{}" cy="{}" r="{}" fill="{}" stroke="black" stroke-width="0.1"/>"#,
+            self.center.x, self.center.y, radius, color
+        )
+    }
 }
 
 #[cfg(test)]

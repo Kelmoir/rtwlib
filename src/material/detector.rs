@@ -68,6 +68,9 @@ impl Material for Detector {
         // 4. Use a GUI framework to display real-time updates
         false
     }
+    fn get_svg_color(&self)->String {
+        "black".to_string()
+    }
 }
 
 impl Detector {

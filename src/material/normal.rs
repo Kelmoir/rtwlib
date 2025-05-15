@@ -31,4 +31,7 @@ impl Material for Normal {
         *attenuation = Rc::new(RgbColor::new(rec.normal.x, rec.normal.y, rec.normal.z));
         false
     }
+    fn get_svg_color(&self)->String {
+        "green".to_string()
+    }
 }

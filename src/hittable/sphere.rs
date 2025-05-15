@@ -76,4 +76,10 @@ impl Hittable for Sphere {
             format!("{:?}", self.mat),
         ]
     }
+    fn to_svg(&self, _normal: Vec3) -> String {
+        format!(
+            r#"<circle cx="{}" cy="{}" r="{}" fill="{}" stroke="black" stroke-width="0.1"/>"#,
+            self.center.x, self.center.y, self.radius, self.mat.get_svg_color()
+        )
+    }
 }

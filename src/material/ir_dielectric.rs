@@ -141,6 +141,9 @@ impl Material for IrDielectric {
     fn get_optical_density(&self) -> f64 {
         self.optical_density
     }
+    fn get_svg_color(&self)->String {
+        "lightblue".to_string()
+    }
 }
 
 //schlick approximation for reflectance at grazing angles

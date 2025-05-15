@@ -28,4 +28,7 @@ impl Material for PerfectMirror {
         *scattered = Ray::new(rec.p, reflected);
         return dot(&scattered.direction, &rec.normal) > 0.;
     }
+    fn get_svg_color(&self)->String {
+        "purple".to_string()
+    }
 }

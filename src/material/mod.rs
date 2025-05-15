@@ -66,4 +66,8 @@ pub trait Material: Debug {
     fn get_optical_density(&self) -> f64 {
         1.0
     }
+    /// Returns the schematic color of the material in SVG format
+    fn get_svg_color(&self)->String {
+        "gray".to_string()
+    }
 }
