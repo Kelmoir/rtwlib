@@ -61,10 +61,7 @@ impl Hittable for Sphere {
         return true;
     }
     fn as_string(&self) -> String {
-        format!(
-            "[ Sphere ] Radius: {}, Position: ({}x, {}z, {}z), material: {:?}",
-            self.radius, self.center.x, self.center.y, self.center.z, self.mat
-        )
+        "Sphere".to_string()
     }
     fn as_info_vec(&self) -> Vec<String> {
         vec![

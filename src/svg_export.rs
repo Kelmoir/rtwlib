@@ -8,6 +8,7 @@
 
 use crate::hittable::HittableList;
 use crate::vec3::Vec3;
+use crate::emitter::Emitter;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -20,7 +21,7 @@ use std::path::Path;
 /// 
 /// # Returns
 /// Result indicating success or failure of the export
-pub fn export_to_svg(hittable_list: &HittableList, target_file: &Path, normal: Vec3) -> std::io::Result<()> {
+pub fn export_to_svg(hittable_list: &HittableList, target_file: &Path, normal: Vec3, emitter: &Emitter) -> std::io::Result<()> {
     // Create SVG header with viewBox
     let mut svg_content = String::from(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -33,6 +34,7 @@ pub fn export_to_svg(hittable_list: &HittableList, target_file: &Path, normal: V
     for object in hittable_list.objects.iter().rev() {
         svg_content.push_str(&object.to_svg(normal));
     }
+    svg_content.push_str(&emitter.to_svg());
 
     // Close SVG tag
     svg_content.push_str("</svg>");

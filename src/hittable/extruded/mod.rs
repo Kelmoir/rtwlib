@@ -6,7 +6,11 @@
 
 use std::{f64, fmt::Debug, ops::Range, rc::Rc};
 
-use crate::{material::Material, ray::Ray, vec3::{dot, Vec3}};
+use crate::{
+    material::Material,
+    ray::Ray,
+    vec3::{dot, Vec3},
+};
 
 use super::{HitRecord, Hittable};
 
@@ -106,15 +110,18 @@ impl Hittable for ExtrudedObject {
 
         let mut hits: Vec<(f64, f64, Vec3)> = Vec::new();
         hits.extend(self.outline.get_wall_hits(r, self.height, self.normal));
-        
+
         for item in vec![(0.0, -self.normal), (self.height, self.normal)] {
-            if let Some(hit) = self.outline.get_plane_hit(r, item.0.clone(), item.1.clone()) {
+            if let Some(hit) = self
+                .outline
+                .get_plane_hit(r, item.0.clone(), item.1.clone())
+            {
                 if hit != f64::INFINITY && hit != f64::NAN {
                     hits.push((item.0, hit, item.1));
                 }
             }
         }
-        
+
         if hits.len() == 0 {
             return false;
         }
@@ -136,24 +143,28 @@ impl Hittable for ExtrudedObject {
         rec.p = r.at(first_hit.1); // The point of the hit
         rec.set_face_normal(r, &first_hit.2);
         rec.set_material(Rc::clone(&self.mat));
-        rec.position = self.outline.get_position_of_hit(rec.p, self.normal, self.height);
+        rec.position = self
+            .outline
+            .get_position_of_hit(rec.p, self.normal, self.height);
 
         true
     }
     fn as_string(&self) -> String {
         format!(
-            "[ ExtrudedObject ] from object: {}, height: {}",
+            "ExtrudedObject from object: {}, height: {}",
             self.outline.as_string(),
             self.height
         )
     }
 
     fn as_info_vec(&self) -> Vec<String> {
-        vec![
-            "ExtrudedObject".to_string(),
-            self.outline.as_string(),
-            self.height.to_string(),
-        ]
+        let mut result = vec!["ExtrudedObject".to_string()];
+        result.push(format!("Normal: ({}, {}, {})", self.normal.x, self.normal.y, self.normal.z));
+        result.push(format!("Height: {}", self.height));
+        for item in self.outline.as_info_vec().iter() {
+            result.push(item.clone());
+        }
+        result
     }
     fn to_svg(&self, normal: Vec3) -> String {
         if dot(&normal, &self.normal) > 0.999 {
@@ -166,7 +177,7 @@ impl Hittable for ExtrudedObject {
         // Project point onto base plane
         let t = dot(&(point - self.outline.center()), &self.normal);
         let projected_point = point - t * self.normal;
-        
+
         // Check if projected point is within outline
         self.outline.contains_point(projected_point)
     }
@@ -191,13 +202,9 @@ mod tests {
             Vec3::new(0.0, 0.0, 0.0), // center
             2.0,                      // outer radius
         );
-        
-        let cylinder = ExtrudedObject::new(
-            Rc::new(circle_outline),
-            1.0,
-            Vec3::new(0.0, 1.0, 0.0),
-            mat,
-        );
+
+        let cylinder =
+            ExtrudedObject::new(Rc::new(circle_outline), 1.0, Vec3::new(0.0, 1.0, 0.0), mat);
 
         // Ray hitting the ring
         let r = Ray::new(Vec3::new(0.0, 2.0, 1.5), Vec3::new(0.0, -1.0, 0.0));
@@ -206,7 +213,6 @@ mod tests {
             cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should hit the ring"
         );
-
 
         // Ray hitting the cylinder wall inside from below
         let r = Ray::new(Vec3::new(-0.5, -0.5, 0.0), Vec3::new(1.0, 1.0, 0.0));
@@ -239,7 +245,6 @@ mod tests {
             !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should miss the cylinder, outside the radius / above the plane"
         );
-
 
         // Ray missing the cylinder (below)
         let r = Ray::new(Vec3::new(0.5, -0.5, 0.0), Vec3::new(1.0, 0.0, 0.0));
@@ -302,7 +307,6 @@ mod tests {
             poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
             "Ray should hit the side wall from outside"
         );
-
 
         // Ray missing (above)
         let r = Ray::new(Vec3::new(0.0, 2.0, 0.0), Vec3::new(1.0, 0.0, 0.0));

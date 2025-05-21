@@ -174,8 +174,8 @@ impl ExtrudableOutline for Polygon {
 
     fn as_info_vec(&self) -> Vec<String> {
         let mut info = vec![format!("PolyPoint:")];
-        for (i, point) in self.points.iter().enumerate() {
-            info.push(format!("Vertex {}: ({}, {}, {})", i, point.x, point.y, point.z));
+        for point in self.points.iter(){
+            info.push(format!("({}, {}, {})", point.x, point.y, point.z));
         }
         info
     }
