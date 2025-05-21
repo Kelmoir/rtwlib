@@ -27,7 +27,13 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
+    fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord, hit_again: bool) -> bool {
+        let my_ray_t: Range<f64>;
+        if hit_again {
+            my_ray_t = ray_t.start + 0.01 .. ray_t.end;
+        } else {
+            my_ray_t = ray_t;
+        }
         //ray sphere intersections
         let oc = self.center - r.origin;
         let a = &r.direction.length_squared();
@@ -43,10 +49,10 @@ impl Hittable for Sphere {
         let sqrtd = discriminant.sqrt();
 
         let mut root = (h - sqrtd) / a;
-        if !ray_t.surrounds(root) {
+        if !my_ray_t.surrounds(root) {
             // make sure hit is in range
             root = (h + sqrtd) / a;
-            if !ray_t.surrounds(root) {
+            if !my_ray_t.surrounds(root) {
                 return false;
             }
         }

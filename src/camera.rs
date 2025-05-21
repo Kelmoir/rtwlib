@@ -124,6 +124,7 @@ impl Camera {
         self.initialize();
         let mut buffer =
             String::with_capacity((self.image_width * self.image_height * 12) as usize);
+        let impossible_hit = world.objects.len(); //We initialize is as an impossible hit
 
         for j in 0..self.image_height {
             for i in 0..self.image_width {
@@ -131,7 +132,7 @@ impl Camera {
 
                 for _ in 0..self.samples {
                     let r = self.get_ray(i, j);
-                    pixel_color += self.ray_color(r, self.bounces, &world);
+                    pixel_color += self.ray_color(r, self.bounces, &world, impossible_hit);
                 }
                 let rgb = (pixel_color * self.sample_scale).to_rgb_bytes();
                 buffer.push_str(&format!("{} {} {}\n", rgb[0], rgb[1], rgb[2]));
@@ -153,6 +154,7 @@ impl Camera {
     {
         self.initialize();
         let mut buffer = Vec::new();
+        let impossible_hit = world.objects.len(); //We initialize is as an impossible hit
 
         for j in 0..=self.image_height - 1 {
             for i in 0..=self.image_width - 1 {
@@ -160,7 +162,7 @@ impl Camera {
 
                 for _ in 0..self.samples {
                     let r = self.get_ray(i, j);
-                    pixel_color += self.ray_color(r, self.bounces, &world);
+                    pixel_color += self.ray_color(r, self.bounces, &world, impossible_hit);
                 }
                 buffer.extend_from_slice(&(pixel_color * self.sample_scale).to_rgb_bytes());
             }
@@ -230,7 +232,7 @@ impl Camera {
     /// * `r` - The `Ray` to be traced.
     /// * `bounces` - The maximum depth of the trace.
     /// * `world` - A HittableList of objects, representing the scene.
-    pub fn ray_color(&self, r: Ray, bounces: u32, world: &HittableList) -> RgbColor {
+    pub fn ray_color(&self, r: Ray, bounces: u32, world: &HittableList, last_hit: usize) -> RgbColor {
         //actually traces the
         //ray
         if bounces == 0 {
@@ -239,14 +241,14 @@ impl Camera {
 
         let mut rec: HitRecord = Default::default();
 
-        if world.hit(&r, 0.001..f64::INFINITY, &mut rec) {
+        if let Some(last_hit) = world.find_hits(&r, 0.001..f64::INFINITY, &mut rec, last_hit) {
             let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
             let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::from(1.));
             let mut last_material = Rc::clone(&self.filler_material);
 
             if rec.mat.scatter(&r, &rec, &mut attenuation, &mut scattered, &mut last_material) {
                 //does bounce/scatter for materials of hit object
-                return attenuation.mul_rgb(self.ray_color(scattered, bounces - 1, world));
+                return attenuation.mul_rgb(self.ray_color(scattered, bounces - 1, world, last_hit));
             }
 
             return RgbColor::new(0., 0., 0.); // Show up around the edge of metals

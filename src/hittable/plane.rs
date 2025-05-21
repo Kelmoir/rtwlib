@@ -38,7 +38,10 @@ impl Plane {
 }
 
 impl Hittable for Plane {
-    fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
+    fn hit(&self, r: &crate::ray::Ray, ray_t: Range<f64>, rec: &mut HitRecord, hit_again: bool) -> bool {
+        if hit_again {
+            return false;
+        }
         // this took me like 2 hours, don't screw around with it too much.
         let denom = dot(&self.normal, &r.direction);
         if denom.abs() > 1e-4 {

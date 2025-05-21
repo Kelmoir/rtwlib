@@ -36,7 +36,7 @@ pub struct Emitter {
     /// The material, the scene is filled with, before accounting for any other items.
     pub filler_material: Rc<dyn Material>,
     /// The number of rays to save
-    pub num_rays_to_save:u32,
+    pub num_rays_to_save: u32,
     /// The saved rays
     pub saved_rays: Vec<Vec<Vec3>>,
 }
@@ -73,13 +73,14 @@ impl Emitter {
     /// Generate rays from the emitter
     /// n: number of points along the line
     /// m: number of rays per point
-    pub fn emit_rays(&mut self, n: u32, m: u32, world: & HittableList) {
+    pub fn emit_rays(&mut self, n: u32, m: u32, world: &HittableList) {
         let mut rng = rand::thread_rng();
         self.saved_rays.clear();
+        let impossible_hit = world.objects.len(); //We initialize is as an impossible hit
 
         // Generate n points along the line
         for i in 0..n {
-            let t = ((i+1) as f64) / ((n + 1) as f64);
+            let t = ((i + 1) as f64) / ((n + 1) as f64);
             let origin = self.start + (self.end - self.start) * t;
             let mut num_saved = 0;
 
@@ -109,7 +110,7 @@ impl Emitter {
                 // Create ray and color
                 let ray = Ray::new(origin, direction);
                 let mut attenuation: Rc<dyn Color> =
-                Rc::new(FreqPowerColor::black_body(self.temperature));
+                    Rc::new(FreqPowerColor::black_body(self.temperature));
                 let mut last_material = Rc::clone(&self.filler_material);
                 // Check if ray starts inside any object
                 for object in world.objects.iter() {
@@ -121,11 +122,27 @@ impl Emitter {
                 if num_saved < self.num_rays_to_save {
                     let mut saved_ray = Vec::new();
                     saved_ray.push(origin);
-                    self.ray_color(ray, 10, &world, &mut attenuation, &mut last_material, &mut saved_ray);
+                    self.ray_color(
+                        ray,
+                        10,
+                        &world,
+                        &mut attenuation,
+                        &mut last_material,
+                        &mut saved_ray,
+                        impossible_hit,
+                    );
                     self.saved_rays.push(saved_ray);
                     num_saved += 1;
                 } else {
-                    self.ray_color(ray, 10, &world, &mut attenuation, &mut last_material, &mut Vec::new());
+                    self.ray_color(
+                        ray,
+                        10,
+                        &world,
+                        &mut attenuation,
+                        &mut last_material,
+                        &mut Vec::new(),
+                        impossible_hit,
+                    );
                 }
             }
         }
@@ -135,9 +152,10 @@ impl Emitter {
         r: Ray,
         bounces: u32,
         world: &HittableList,
-        attenuation: &mut Rc<dyn Color>, 
+        attenuation: &mut Rc<dyn Color>,
         last_material: &mut Rc<dyn Material>,
-        saved_ray: &mut Vec<Vec3>
+        saved_ray: &mut Vec<Vec3>,
+        last_hit: usize,
     ) {
         //actually traces the
         //ray
@@ -146,7 +164,7 @@ impl Emitter {
             return;
         }
         let mut rec: HitRecord = Default::default();
-        if world.hit(&r, 0.001..1e10, &mut rec) {
+        if let Some(last_hit) = world.find_hits(&r, 0.0..1e10, &mut rec, last_hit) {
             if saved_ray.len() > 0 {
                 saved_ray.push(rec.p);
             }
@@ -156,7 +174,15 @@ impl Emitter {
                 .mat
                 .scatter(&r, &rec, attenuation, &mut scattered, last_material)
             {
-                self.ray_color(scattered, bounces - 1, world, attenuation, & mut rec.mat, saved_ray);
+                self.ray_color(
+                    scattered,
+                    bounces - 1,
+                    world,
+                    attenuation,
+                    &mut rec.mat,
+                    saved_ray,
+                    last_hit,
+                );
             }
         }
     }
@@ -164,18 +190,18 @@ impl Emitter {
     /// Returns a string containing all paths
     pub fn to_svg(&self) -> String {
         let mut svg_string = String::new();
-        
+
         for ray in &self.saved_rays {
             if ray.len() < 2 {
                 continue;
             }
 
             let mut path = format!("<path d=\"M {},{}", ray[0].x, ray[0].y);
-            
+
             for point in ray.iter().skip(1) {
                 path.push_str(&format!(" L {},{}", point.x, point.y));
             }
-            
+
             path.push_str("\" stroke=\"green\" stroke-width=\"0.02\" fill=\"none\"/>");
             svg_string.push_str(&path);
             svg_string.push('\n');

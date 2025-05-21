@@ -119,21 +119,26 @@ impl Hittable for HittableList {
     /// * `rec` - The `HitRecord` to be modified.
     /// # Returns
     /// A boolean indicating if the ray hit any of the objects in the list.
-    fn hit(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
+    fn find_hits(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord, mut last_hit_index: usize) -> Option<usize> {
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.end;
 
-        for object in self.objects.iter() {
+        for (i, object) in self.objects.iter().enumerate() {
             //checks every object for a hit
             let mut temp_rec: HitRecord = Default::default();
 
-            if object.hit(r, ray_t.start..closest_so_far, &mut temp_rec) {
+            if object.hit(r, ray_t.start..closest_so_far, &mut temp_rec, last_hit_index == i) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 *rec = temp_rec;
+                last_hit_index = i;
             }
         }
-        return hit_anything;
+        if hit_anything {
+            Some(last_hit_index)
+        } else {
+            None
+        }
     }
     fn get_material(&self) -> Rc<dyn Material> {
         Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.5))))
@@ -145,10 +150,15 @@ pub trait Hittable: HittableClone {
     /// * `r` - The `Ray` to be traced.
     /// * `ray_t` - The range of the ray.
     /// * `rec` - The `HitRecord` to be modified.
+    /// * `hit_again` - A boolean indicating if the ray might hit the object again.
     /// # Returns
-    /// A boolean indicating if the ray hit the object.
-    fn hit(&self, _r: &Ray, _ray_t: Range<f64>, _rec: &mut HitRecord) -> bool {
+    /// If the object is a list, it will return the index of the object that was hit.
+    fn hit(&self, _r: &Ray, _ray_t: Range<f64>, _rec: &mut HitRecord, _hit_again: bool) -> bool {
         false
+    }
+    /// Iterates over all objects and searches for actual hits
+    fn find_hits(&self, _r: &Ray, _ray_t: Range<f64>, _rec: &mut HitRecord, _last_hit_index: usize) -> Option<usize> {
+        None
     }
     /// Returns a string representation of the object.
     fn as_string(&self) -> String {

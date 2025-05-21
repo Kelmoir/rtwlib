@@ -105,7 +105,13 @@ impl ExtrudedObject {
 }
 
 impl Hittable for ExtrudedObject {
-    fn hit(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord) -> bool {
+    fn hit(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord, hit_again: bool) -> bool {
+        let my_ray_t: Range<f64>;
+        if hit_again {
+            my_ray_t = ray_t.start + 0.01 .. ray_t.end;
+        } else {
+            my_ray_t = ray_t;
+        }
         use crate::utils::RangeExtensions;
 
         let mut hits: Vec<(f64, f64, Vec3)> = Vec::new();
@@ -135,7 +141,7 @@ impl Hittable for ExtrudedObject {
             }
         }
 
-        if !ray_t.surrounds(first_hit.1) {
+        if !my_ray_t.surrounds(first_hit.1) {
             return false;
         }
         // Record the hit information
@@ -210,7 +216,7 @@ mod tests {
         let r = Ray::new(Vec3::new(0.0, 2.0, 1.5), Vec3::new(0.0, -1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should hit the ring"
         );
 
@@ -218,7 +224,7 @@ mod tests {
         let r = Ray::new(Vec3::new(-0.5, -0.5, 0.0), Vec3::new(1.0, 1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should hit the inside cylinder wall from below"
         );
 
@@ -226,7 +232,7 @@ mod tests {
         let r = Ray::new(Vec3::new(-0.5, 1.5, 0.0), Vec3::new(1.0, -1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should hit the inside cylinder wall from above"
         );
 
@@ -234,7 +240,7 @@ mod tests {
         let r = Ray::new(Vec3::new(3.0, 2.0, 0.0), Vec3::new(0.0, -1.0, 1.0));
         let mut rec = HitRecord::default();
         assert!(
-            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss the cylinder, outside the radius"
         );
 
@@ -242,7 +248,7 @@ mod tests {
         let r = Ray::new(Vec3::new(3.0, 2.0, 0.0), Vec3::new(-1.0, 1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss the cylinder, outside the radius / above the plane"
         );
 
@@ -250,7 +256,7 @@ mod tests {
         let r = Ray::new(Vec3::new(0.5, -0.5, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss the cylinder, below the plane"
         );
 
@@ -258,7 +264,7 @@ mod tests {
         let r = Ray::new(Vec3::new(0.5, 1.5, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !cylinder.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss the cylinder, above the plane"
         );
     }
@@ -288,7 +294,7 @@ mod tests {
         let r = Ray::new(Vec3::new(1.5, 2.0, 0.0), Vec3::new(0.0, -1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should hit the top face"
         );
 
@@ -296,7 +302,7 @@ mod tests {
         let r = Ray::new(Vec3::new(1.5, -1.0, 0.0), Vec3::new(0.0, 1.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should hit the bottom face"
         );
 
@@ -304,7 +310,7 @@ mod tests {
         let r = Ray::new(Vec3::new(3.0, 0.5, 0.0), Vec3::new(-1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should hit the side wall from outside"
         );
 
@@ -312,7 +318,7 @@ mod tests {
         let r = Ray::new(Vec3::new(0.0, 2.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss (above)"
         );
 
@@ -320,7 +326,7 @@ mod tests {
         let r = Ray::new(Vec3::new(3.0, 0.5, 2.0), Vec3::new(0.0, 0.0, -1.0));
         let mut rec = HitRecord::default();
         assert!(
-            !poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss (outside)"
         );
 
@@ -328,7 +334,7 @@ mod tests {
         let r = Ray::new(Vec3::new(0.0, -2.0, 0.0), Vec3::new(1.0, 0.0, 0.0));
         let mut rec = HitRecord::default();
         assert!(
-            !poly.hit(&r, 0.001..f64::INFINITY, &mut rec),
+            !poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss (below)"
         );
     }
