@@ -76,7 +76,6 @@ impl Emitter {
     pub fn emit_rays(&mut self, n: u32, m: u32, world: &HittableList) {
         let mut rng = rand::thread_rng();
         self.saved_rays.clear();
-        let impossible_hit = world.objects.len(); //We initialize is as an impossible hit
 
         // Generate n points along the line
         for i in 0..n {
@@ -107,43 +106,75 @@ impl Emitter {
                     direction = -direction;
                 }
 
-                // Create ray and color
+                // Create ray and cast it
                 let ray = Ray::new(origin, direction);
-                let mut attenuation: Rc<dyn Color> =
-                    Rc::new(FreqPowerColor::black_body(self.temperature));
-                let mut last_material = Rc::clone(&self.filler_material);
-                // Check if ray starts inside any object
-                for object in world.objects.iter() {
-                    if object.contains_point(origin) {
-                        last_material = Rc::clone(&object.get_material());
-                        break;
-                    }
-                }
-                if num_saved < self.num_rays_to_save {
-                    let mut saved_ray = Vec::new();
-                    saved_ray.push(origin);
-                    self.ray_color(
-                        ray,
-                        10,
-                        &world,
-                        &mut attenuation,
-                        &mut last_material,
-                        &mut saved_ray,
-                        impossible_hit,
-                    );
-                    self.saved_rays.push(saved_ray);
-                    num_saved += 1;
-                } else {
-                    self.ray_color(
-                        ray,
-                        10,
-                        &world,
-                        &mut attenuation,
-                        &mut last_material,
-                        &mut Vec::new(),
-                        impossible_hit,
-                    );
-                }
+                self.cast_ray(ray, world, num_saved < self.num_rays_to_save);
+                num_saved += 1;
+            }
+        }
+    }
+
+   fn cast_ray(&mut self, ray: Ray, world: &HittableList, save_ray: bool) {
+        let impossible_hit = world.objects.len();
+        let mut attenuation: Rc<dyn Color> =
+            Rc::new(FreqPowerColor::black_body(self.temperature));
+        let mut last_material = Rc::clone(&self.filler_material);
+        // Check if ray starts inside any object
+        for object in world.objects.iter() {
+            if object.contains_point(ray.origin) {
+                last_material = Rc::clone(&object.get_material());
+                break;
+            }
+        }
+        if save_ray {
+            let mut saved_ray = Vec::new();
+            saved_ray.push(ray.origin);
+            self.ray_color(
+                ray,
+                10,
+                &world,
+                &mut attenuation,
+                &mut last_material,
+                &mut saved_ray,
+                impossible_hit,
+            );
+            self.saved_rays.push(saved_ray);
+        } else {
+            self.ray_color(
+                ray,
+                10,
+                &world,
+                &mut attenuation,
+                &mut last_material,
+                &mut Vec::new(),
+                impossible_hit,
+            );
+        }
+    }
+    ///This Setting emits tightly focussed rays, along the direction of the emitter normal
+    /// n: number of points along the line
+    /// m: number of rays per point 
+    pub fn emit_focussed_rays(&mut self, n: u32, m: u32, world: &HittableList) {
+        let mut rng = rand::thread_rng();
+        self.saved_rays.clear();
+
+        // Generate n points along the line
+        for i in 0..n {
+            let t = ((i + 1) as f64) / ((n + 1) as f64);
+            let origin = self.start + (self.end - self.start) * t;
+            let mut num_saved = 0;
+
+            // Generate m rays from each point
+            for _ in 0..m {
+                
+                let u = rng.gen_range(-0.01..0.01);
+                let v = rng.gen_range(-0.01..0.01);
+                let w = rng.gen_range(-0.01..0.01);
+                let mut direction = Vec3::new(self.normal.x + u, self.normal.y + v, self.normal.z + w);
+                direction = direction.normalized();
+                let ray = Ray::new(origin, direction);
+                self.cast_ray(ray, world,num_saved < self.num_rays_to_save);
+                num_saved += 1;
             }
         }
     }
@@ -184,6 +215,10 @@ impl Emitter {
                     last_hit,
                 );
             }
+        } else {
+            if saved_ray.len() > 0 {
+                saved_ray.push(r.origin+(50.*r.direction));
+            }
         }
     }
     /// Exports the saved rays as SVG path elements
@@ -222,7 +257,7 @@ mod tests {
         let start = Vec3::new(0.0, 0.0, 0.0);
         let end = Vec3::new(1.0, 0.0, 0.0);
         let normal = Vec3::new(0.0, 0.0, 1.0);
-        let filler_material = Rc::new(IrDielectric::new(1.0, vec![(500.0, 0.0)]));
+        let filler_material = Rc::new(IrDielectric::new_simple(1.0, vec![(500.0, 0.0)]));
         let emitter = Emitter::new(start, end, normal, 6000.0, filler_material, 0);
 
         assert_eq!(emitter.start.x, start.x);

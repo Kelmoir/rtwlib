@@ -95,7 +95,7 @@ impl ExtrudableOutline for Polygon {
             let edge = p2 - p1;
             
             // Calculate the normal to the wall segment (perpendicular to both edge and extrusion)
-            let wall_normal = cross(&edge, &normal).normalized();
+            let wall_normal = cross( &normal,&edge).normalized();
             
             // Check for hit with the wall segment
             let denom = dot(&r.direction, &wall_normal);

@@ -3,7 +3,6 @@
 //! It also includes a function to create an HTML file with a Three.js viewer for the exported scene.
 
 use crate::hittable::HittableList;
-use crate::ray::Ray;
 use crate::vec3::Vec3;
 use std::path::Path;
 use std::fs::File;
@@ -29,7 +28,7 @@ pub fn export_to_three(
     world: &HittableList,
     output_path: &Path,
     include_rays: bool,
-    ray_color: &str,
+    _ray_color: &str,
     ray_paths: Option<Vec<RayPath>>,
 ) -> std::io::Result<()> {
     let mut file = File::create(output_path)?;

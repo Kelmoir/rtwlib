@@ -148,6 +148,7 @@ impl Hittable for ExtrudedObject {
         rec.t = first_hit.1;
         rec.p = r.at(first_hit.1); // The point of the hit
         rec.set_face_normal(r, &first_hit.2);
+        rec.front_face = dot(&r.direction, &first_hit.2) < 0.0;
         rec.set_material(Rc::clone(&self.mat));
         rec.position = self
             .outline
