@@ -71,6 +71,13 @@ impl FreqPowerColor {
         Self { wavelength, power }
     }
     /// Creates a new FreqPowerColor from a temperature, based of a black body emission
+    /// 
+    /// # Arguments
+    /// 
+    /// * `temperature` - The temperature of the black body [K]!
+    /// 
+    /// # Returns
+    /// 
     pub fn black_body(temperature: f64) -> Self {
         use rand::Rng;
         let mut rng = rand::thread_rng();
@@ -82,7 +89,6 @@ impl FreqPowerColor {
         // Standard deviation chosen to give reasonable spread
         let std_dev = peak_wavelength * 0.5;
         let wavelength = loop {
-            //TODO: Correct setup...  Does not care about distribution
             let w = rng.sample(rand_distr::Normal::new(peak_wavelength, std_dev).unwrap());
             if w > 0.0 { // Wavelength must be positive
                 break w;
@@ -91,8 +97,9 @@ impl FreqPowerColor {
 
         // Power follows Planck's law but simplified
         // Just using relative power compared to peak
-        let power = (-((wavelength - peak_wavelength).powi(2))/(2.0 * std_dev.powi(2))).exp();
-        
+        //let power = (-((wavelength - peak_wavelength).powi(2))/(2.0 * std_dev.powi(2))).exp();
+        let power = 1.0; // Distribution should be handled through the chance for a specific wavelength
+
         Self::new(wavelength, power)
     }
 }

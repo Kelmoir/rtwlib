@@ -199,7 +199,7 @@ mod tests {
     use crate::color::RgbColor;
     use crate::hittable::extruded::circle::Circle;
     use crate::hittable::extruded::polygon::Polygon;
-    use crate::material::Lambertian;
+    use crate::material::{IrDielectric, Lambertian};
     use crate::ray::Ray;
 
     #[test]
@@ -338,5 +338,39 @@ mod tests {
             !poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false),
             "Ray should miss (below)"
         );
+    }
+    #[test]
+    fn test_material_assignment() {
+        //let mat: Rc<dyn Material> = Rc::new(Lambertian::new(Rc::new(RgbColor::from(0.5))));
+        let mat: Rc<dyn Material>= Rc::new(IrDielectric::new_simple(1.5, vec![(0., 0.), (100., 0.)]));
+
+        // Create a regular hexagon with radius 2.0
+        let outer_points = vec![
+            Vec3::new(1.0, 0.0, -1.732),
+            Vec3::new(-1.0, 0.0, -1.732),
+            Vec3::new(-2.0, 0.0, 0.0),
+            Vec3::new(-1.0, 0.0, 1.732),
+            Vec3::new(1.0, 0.0, 1.732),
+            Vec3::new(2.0, 0.0, 0.0),
+        ];
+
+        let height = 1.0;
+        let poly = ExtrudedObject::new(
+            Rc::new(Polygon::new(outer_points)),
+            height,
+            Vec3::new(0.0, 1.0, 0.0),
+            mat.clone(),
+        );
+
+        // Ray hitting a side wall from outside
+        let r = Ray::new(Vec3::new(3.0, 0.5, 1.0), Vec3::new(-1.0, 0.0, 0.0));
+        for _ in 0..100 {
+            let mut rec = HitRecord::default();
+            poly.hit(&r, 0.001..f64::INFINITY, &mut rec, false);
+            assert!(Rc::ptr_eq(&rec.mat, &mat), "Ray should have set the correct material");
+            assert!(rec.front_face, "Ray should have hit the front face");
+            assert!(rec.mat.get_optical_density() == 1.5, "Ray should have the new optical density");
+        }
+
     }
 }

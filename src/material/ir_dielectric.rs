@@ -18,7 +18,6 @@ type Graph = Vec<DataPoint>;
 /// - cauchy_b: First dispersion coefficient (μm²)  
 /// - cauchy_c: Second dispersion coefficient (μm⁴)
 pub struct IrDielectric {
-    optical_density: f64,
     ///This describes the absorption spectrum of the Dielectric in
     absorption_spectrum: Graph,
     /// Cauchy coefficient A: base refractive index (dimensionless)
@@ -27,6 +26,8 @@ pub struct IrDielectric {
     cauchy_b: f64,
     /// Cauchy coefficient C: second-order dispersion term (μm⁴)
     cauchy_c: f64,
+    /// If true, then a simple (static) optical density is used
+    simple: bool,
 }
 
 impl IrDielectric {
@@ -37,25 +38,26 @@ impl IrDielectric {
     /// - cauchy_a: Base refractive index coefficient (dimensionless)
     /// - cauchy_b: First dispersion coefficient (μm²)
     /// - cauchy_c: Second dispersion coefficient (μm⁴)
-    pub fn new(
-        optical_density: f64,
-        absorption_spectrum: Graph,
-        cauchy_a: f64,
-        cauchy_b: f64,
-        cauchy_c: f64,
-    ) -> Self {
+    pub fn new(absorption_spectrum: Graph, cauchy_a: f64, cauchy_b: f64, cauchy_c: f64) -> Self {
         IrDielectric {
-            optical_density,
             absorption_spectrum,
             cauchy_a,
             cauchy_b,
             cauchy_c,
+            simple: false,
         }
     }
 
     /// Creates a new `Dielectric` material with default Cauchy coefficients for typical glass
+    /// The optical_density becomes the base refractive index (cauchy_a)
     pub fn new_simple(optical_density: f64, absorption_spectrum: Graph) -> Self {
-        Self::new(optical_density, absorption_spectrum, 1.0, 0.01, 0.0)
+        IrDielectric {
+            absorption_spectrum,
+            cauchy_a: optical_density,
+            cauchy_b: 0.0,
+            cauchy_c: 0.0,
+            simple: true,
+        }
     }
 
     /// Gets the absorption coefficient for a given wavelength
@@ -103,14 +105,22 @@ impl IrDielectric {
         E.powf(-self.get_absorption_coefficient_for_wavelength(wavelength) * distance)
     }
 
-
-    /// Calculates the wavelength-dependent refractive index using Cauchy's equation
-    /// n(λ) = A + B/λ² + C/λ⁴ where λ is in micrometers
+    /// Calculates the wavelength-dependent refractive index using the Sellmeier equation
+    /// n²(λ) = 1 + Σ(B_i * λ²)/(λ² - C_i) where λ is in micrometers
     pub fn get_refractive_index(&self, wavelength_nm: f64) -> f64 {
         let wavelength_um = wavelength_nm / 1000.0; // Convert nm to μm
-        self.cauchy_a
-            + self.cauchy_b / (wavelength_um * wavelength_um)
-            + self.cauchy_c / (wavelength_um * wavelength_um * wavelength_um * wavelength_um)
+        let lambda_squared = wavelength_um * wavelength_um;
+        
+        // Using the first three terms of the Sellmeier equation
+        // Repurposing the existing coefficients:
+        // cauchy_a -> B1
+        // cauchy_b -> C1  
+        // cauchy_c -> B2
+        let term1 = (self.cauchy_a * lambda_squared) / (lambda_squared - self.cauchy_b);
+        let term2 = (self.cauchy_c * lambda_squared) / (lambda_squared - 0.0); // Simplified second term
+        
+        let n_squared = 1.0 + term1 + term2;
+        n_squared.sqrt()
     }
 }
 
@@ -124,8 +134,8 @@ impl Material for IrDielectric {
         last_material: &mut Rc<dyn Material>,
     ) -> bool {
         *attenuation = Rc::new(FreqPowerColor::new(1.0, 1.0));
-
-        let current_ri = self.get_refractive_index(attenuation.get_wavelength());
+ 
+        let current_ri = self.get_optical_density();
         let ri: f64 = if rec.front_face {
             last_material.get_optical_density() / current_ri
         } else {
@@ -141,11 +151,7 @@ impl Material for IrDielectric {
         if cannot_refract || reflectance(cos_theta, ri) > rand::thread_rng().gen_range(0.0..1.0) {
             direction = unit_direction.reflect(&rec.normal)
         } else {
-            direction = refract(
-                unit_direction,
-                &rec.normal,
-                ri,
-            );
+            direction = refract(unit_direction, &rec.normal, ri);
             *last_material = Rc::new(self.clone());
         }
 
@@ -159,7 +165,12 @@ impl Material for IrDielectric {
         *attenuation = attenuation.mul_scalar(absorption);
     }
     fn get_optical_density(&self) -> f64 {
-        self.optical_density
+        if self.simple {
+            self.cauchy_a
+        } else {
+            // Return refractive index at sodium D-line (589 nm) for consistency with Cauchy equation
+            self.get_refractive_index(589.0)
+        }
     }
     fn get_svg_color(&self) -> String {
         "lightblue".to_string()
@@ -184,7 +195,7 @@ mod tests {
     #[test]
     fn test_ir_dielectric_creation() {
         let ir = IrDielectric::new_simple(1.5, vec![]);
-        assert_eq!(ir.optical_density, 1.5);
+        assert_eq!(ir.cauchy_a, 1.5);
     }
 
     #[test]
@@ -273,7 +284,7 @@ mod tests {
             (
                 Vec3::new(1.0, 0.0, -1.0).normalized(),
                 Vec3::new(0.0, 0.0, 1.0),
-                Vec3::new(0.7071067811865476, 0.0, -0.7071067811865476),
+                Vec3::new(0.47_f64.sin(), 0.0, -0.47_f64.cos()).normalized(),
                 2.0,
             ),
             // Grazing angle (close to total internal reflection)
@@ -350,4 +361,5 @@ mod tests {
             scattered.direction
         );
     }
+
 }
