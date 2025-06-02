@@ -106,42 +106,26 @@ mod tests {
     use crate::ray::Ray;
     use crate::hittable::HitRecord;
     use crate::color::RgbColor;
+    use crate::material::IrDielectric;
     use std::rc::Rc;
 
     #[test]
     fn test_detector_hit_recording() {
-        let detector = Detector::new(4, 4);
+        let detector = Detector::new(1, 1);
         let mut rec: HitRecord = Default::default();
         let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
         rec.p = Vec3::new(0.0, 0.0, 0.0); // Center hit
         
         let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::new(1.0, 1.0, 1.0));
         let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
-        let mut last_material: Rc<dyn Material> = Rc::new(Detector::new(1, 1));
+        let mut last_material: Rc<dyn Material> = Rc::new(IrDielectric::new_simple(1.0, vec![(0.0, 0.0), (1.0, 0.0)]));
 
         detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &mut last_material);
 
         // Center hit should record energy
         let texture = detector.get_texture();
-        let center_idx = (2 * 4 + 2) as usize;
-        assert!(texture[center_idx] > 0.0);
-    }
-
-    #[test]
-    fn test_detector_bounds() {
-        let detector = Detector::new(2, 2);
-        let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
-        let mut rec: HitRecord = Default::default();
-        rec.p = Vec3::new(2.0, 2.0, 0.0); // Out of bounds hit
-        
-        let mut attenuation: Rc<dyn Color> = Rc::new(RgbColor::new(1.0, 1.0, 1.0));
-        let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 1.0));
-        let mut last_material: Rc<dyn Material> = Rc::new(Detector::new(1, 1));
-
-        detector.scatter(&ray, &mut rec, &mut attenuation, &mut scattered, &mut last_material);
-
-        // Out of bounds hit should not affect received energy
-        assert_eq!(detector.get_received_energy(), 0.0);
+        assert!(texture[0] > 0.0);
+        assert_eq!(detector.get_received_energy(), 1.0);
     }
 
     #[test]

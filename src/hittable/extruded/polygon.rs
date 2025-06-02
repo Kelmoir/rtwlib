@@ -30,7 +30,7 @@ impl Polygon {
         // Ray casting algorithm to determine if point is inside polygon
         let mut inside = false;
         let n = self.points.len();
-        
+         
         // Get the polygon's normal
         let normal = self.get_plane_normal();
         
@@ -95,7 +95,12 @@ impl ExtrudableOutline for Polygon {
             let edge = p2 - p1;
             
             // Calculate the normal to the wall segment (perpendicular to both edge and extrusion)
-            let wall_normal = cross( &normal,&edge).normalized();
+            let mut wall_normal = cross( &normal,&edge).normalized();
+            let path_to_center = self.center - p1;
+            if dot(&wall_normal, &path_to_center) > 0.0 {
+                // The wall normal faces inwards. We need to invert the points
+                wall_normal = -wall_normal;
+            }
             
             // Check for hit with the wall segment
             let denom = dot(&r.direction, &wall_normal);
@@ -267,10 +272,10 @@ mod tests {
     #[test]
     fn test_get_position_of_hit() {
         let points = vec![
-            Vec3::new(1.0, 0.0, 0.0),
-            Vec3::new(0.0, 1.0, 0.0),
-            Vec3::new(-1.0, 0.0, 0.0),
             Vec3::new(0.0, -1.0, 0.0),
+            Vec3::new(-1.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
         ];
         let polygon = Polygon::new(points);
 

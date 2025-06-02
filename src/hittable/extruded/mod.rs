@@ -136,7 +136,7 @@ impl Hittable for ExtrudedObject {
         let mut first_hit: (f64, f64, Vec3) =
             (f64::INFINITY, f64::INFINITY, Vec3::new(0.0, 0.0, 0.0));
         for hit in hits {
-            if hit.1 < first_hit.1 {
+            if hit.1 < first_hit.1 && hit.1 > my_ray_t.start{
                 first_hit = hit;
             }
         }
@@ -195,12 +195,17 @@ impl Hittable for ExtrudedObject {
 
 #[cfg(test)]
 mod tests {
+    use rand::Rng;
+
     use super::*;
-    use crate::color::RgbColor;
+    use crate::color::{Color, FreqPowerColor, RgbColor};
     use crate::hittable::extruded::circle::Circle;
     use crate::hittable::extruded::polygon::Polygon;
-    use crate::material::{IrDielectric, Lambertian};
+    use crate::hittable::plane::Plane;
+    use crate::hittable::HittableList;
+    use crate::material::{IrDielectric, Lambertian, PerfectMirror};
     use crate::ray::Ray;
+    use crate::vec3::cross;
 
     #[test]
     fn test_ring_hit() {
@@ -346,12 +351,10 @@ mod tests {
 
         // Create a regular hexagon with radius 2.0
         let outer_points = vec![
-            Vec3::new(1.0, 0.0, -1.732),
-            Vec3::new(-1.0, 0.0, -1.732),
-            Vec3::new(-2.0, 0.0, 0.0),
-            Vec3::new(-1.0, 0.0, 1.732),
-            Vec3::new(1.0, 0.0, 1.732),
-            Vec3::new(2.0, 0.0, 0.0),
+            Vec3::new(2.0, 0.0, -2.),
+            Vec3::new(-2.0, 0.0, -2.),
+            Vec3::new(-2.0, 0.0, 2.),
+            Vec3::new(2.0, 0.0, 2.),
         ];
 
         let height = 1.0;
@@ -372,5 +375,106 @@ mod tests {
             assert!(rec.mat.get_optical_density() == 1.5, "Ray should have the new optical density");
         }
 
+    }
+    #[test]
+    fn test_polygon_non_outer_passthrough(){
+        let points = vec![
+            Vec3::new(-10.0, -10.0, 0.0),
+            Vec3::new(0.0, 10.0, 0.0),
+            Vec3::new(10.0, -10.0, 0.0),
+        ];
+        let prism_1_normal = cross(&Vec3::new(0.,0.,1.), &(points[1]-points[0])).normalized();
+        let outline: Rc<dyn ExtrudableOutline> = Rc::new(Polygon::new(points));
+        let mat = IrDielectric::new_simple(1.5, vec![(0., 0.), (100., 0.)]);
+        let prism = ExtrudedObject::new(outline, 10.0, Vec3::new(0.0, 0.0, 1.0), Rc::new(mat));
+        let number_of_rays:u32 = 1000;
+        let mirror: Rc<dyn Material> = Rc::new(PerfectMirror::new());
+        let plane = Plane::new(Vec3::new(0., 0., 0.), Vec3::new(-1., 0.3, 0.).normalized(), mirror);
+    
+        let vacuum: Rc<dyn Material> = Rc::new(IrDielectric::new_simple(1.0, vec![(0., 0.), (100., 0.)]));
+        let origin =Vec3::new(-12.0, -5.0, 5.0);
+        let mut rng = rand::thread_rng();
+        let u = rng.gen_range(-0.01 .. 0.01);
+        let v = rng.gen_range(-0.01 .. 0.01);
+        let w = rng.gen_range(-0.01 .. 0.01);
+        let direction = Vec3::new(1.+u, 0.5+v, 0.+w).normalized();
+            let ray = Ray::new(origin, direction);
+        
+        for _ in 0..number_of_rays {
+            let mut rec = HitRecord::default();
+            assert!(prism.hit(&ray, 0.001..f64::INFINITY, &mut rec, false), "Ray should hit the prism");
+            let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
+            let mut attenuation: Rc<dyn Color> =
+                Rc::new(FreqPowerColor::black_body(297.15));
+            rec.mat.scatter(&ray, &rec, &mut attenuation, &mut scattered, &mut vacuum.clone());
+            if dot(&scattered.direction, &prism_1_normal) < 0.0 {
+                //We did not reflect, the next hit is the issue.
+                if !plane.hit(&scattered, 0.001..f64::INFINITY, &mut rec, false) {
+                    assert!(plane.hit(&scattered, 0.001..f64::INFINITY, &mut rec, false), "Ray should hit the plane)");
+                }
+                let mut finally = Ray::new(Vec3::from(0.), Vec3::from(0.));
+                rec.mat.scatter(&scattered, &rec, &mut attenuation, &mut finally, &mut rec.mat.clone());
+                if dot(&finally.direction, &scattered.direction) > 0.999 {
+                    rec.mat.scatter(&scattered, &rec, &mut attenuation, &mut finally, &mut rec.mat.clone());
+                }
+            }
+        }
+    }
+    #[test]
+    fn test_polygon_non_outer_passthrough_with_world(){
+        let points = vec![
+            Vec3::new(-10.0, -10.0, 0.0),
+            Vec3::new(0.0, 10.0, 0.0),
+            Vec3::new(10.0, -10.0, 0.0),
+        ];
+        let prism_1_normal = cross(&Vec3::new(0.,0.,1.), &(points[1]-points[0])).normalized();
+        let outline: Rc<dyn ExtrudableOutline> = Rc::new(Polygon::new(points));
+        let mat = IrDielectric::new_simple(1.5, vec![(0., 0.), (100., 0.)]);
+        let prism = ExtrudedObject::new(outline, 10.0, Vec3::new(0.0, 0.0, 1.0), Rc::new(mat));
+        let number_of_rays:u32 = 1000;
+        let mirror: Rc<dyn Material> = Rc::new(PerfectMirror::new());
+        let plane = Plane::new(Vec3::new(0., 0., 0.), Vec3::new(-1., 0.3, 0.).normalized(), mirror);
+    
+        let vacuum: Rc<dyn Material> = Rc::new(IrDielectric::new_simple(1.0, vec![(0., 0.), (100., 0.)]));
+        let origin =Vec3::new(-12.0, -5.0, 5.0);
+        let mut rng = rand::thread_rng();
+        let u = rng.gen_range(-0.01 .. 0.01);
+        let v = rng.gen_range(-0.01 .. 0.01);
+        let w = rng.gen_range(-0.01 .. 0.01);
+        let direction = Vec3::new(1.+u, 0.5+v, 0.+w).normalized();
+            let ray = Ray::new(origin, direction);
+        let mut world = HittableList::new();
+        world.add(prism);
+        world.add(plane);
+        
+        for _ in 0..number_of_rays {
+            let mut rec = HitRecord::default();
+            let last_index = if let Some(last_index) = world.find_hits(&ray, 0.001..f64::INFINITY, &mut rec, 5) {
+                assert!(last_index == 0, "Hit should be on the prism");
+                last_index
+            }
+            else {
+                assert!(false, "No hit was detected");
+                return; // This won't be reached but helps with type inference
+            };
+            let mut scattered = Ray::new(Vec3::from(0.), Vec3::from(0.));
+            let mut attenuation: Rc<dyn Color> =
+                Rc::new(FreqPowerColor::black_body(297.15));
+            rec.mat.scatter(&ray, &rec, &mut attenuation, &mut scattered, &mut vacuum.clone());
+            if dot(&scattered.direction, &prism_1_normal) < 0.0 {
+                //We did not reflect, the next hit is the issue.
+                if let Some(hit_index) = world.find_hits(&scattered, 0.001..f64::INFINITY, &mut rec, last_index) {
+                    assert!(hit_index == 1, "Hit should be on the plane");
+                }
+                else {
+                    assert!(false, "No hit was detected");
+                }
+                let mut finally = Ray::new(Vec3::from(0.), Vec3::from(0.));
+                rec.mat.scatter(&scattered, &rec, &mut attenuation, &mut finally, &mut rec.mat.clone());
+                if dot(&finally.direction, &scattered.direction) > 0.999 {
+                    rec.mat.scatter(&scattered, &rec, &mut attenuation, &mut finally, &mut rec.mat.clone());
+                }
+            }
+        }
     }
 }
