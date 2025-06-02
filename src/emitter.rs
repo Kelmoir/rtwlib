@@ -154,7 +154,7 @@ impl Emitter {
     ///This Setting emits tightly focussed rays, along the direction of the emitter normal
     /// n: number of points along the line
     /// m: number of rays per point 
-    pub fn emit_focussed_rays(&mut self, n: u32, m: u32, world: &HittableList) {
+    pub fn emit_focussed_rays(&mut self, n: u32, m: u32, world: &HittableList, fuzziness:f64) {
         let mut rng = rand::thread_rng();
         self.saved_rays.clear();
 
@@ -166,10 +166,9 @@ impl Emitter {
 
             // Generate m rays from each point
             for _ in 0..m {
-                
-                let u = rng.gen_range(-0.01..0.01);
-                let v = rng.gen_range(-0.01..0.01);
-                let w = rng.gen_range(-0.01..0.01);
+                let u = rng.gen_range(-fuzziness .. fuzziness);
+                let v = rng.gen_range(-fuzziness .. fuzziness);
+                let w = rng.gen_range(-fuzziness .. fuzziness);
                 let mut direction = Vec3::new(self.normal.x + u, self.normal.y + v, self.normal.z + w);
                 direction = direction.normalized();
                 let ray = Ray::new(origin, direction);
