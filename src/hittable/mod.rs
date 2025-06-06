@@ -119,7 +119,7 @@ impl Hittable for HittableList {
     /// * `rec` - The `HitRecord` to be modified.
     /// # Returns
     /// A boolean indicating if the ray hit any of the objects in the list.
-    fn find_hits(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord, mut last_hit_index: usize) -> Option<usize> {
+    fn find_hits(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord, last_hit_index: usize) -> Option<usize> {
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.end;
         let mut next_hit_index = last_hit_index;
