@@ -122,6 +122,7 @@ impl Hittable for HittableList {
     fn find_hits(&self, r: &Ray, ray_t: Range<f64>, rec: &mut HitRecord, mut last_hit_index: usize) -> Option<usize> {
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.end;
+        let mut next_hit_index = last_hit_index;
 
         for (i, object) in self.objects.iter().enumerate() {
             //checks every object for a hit
@@ -131,11 +132,11 @@ impl Hittable for HittableList {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 *rec = temp_rec;
-                last_hit_index = i;
+                next_hit_index = i;
             }
         }
         if hit_anything {
-            Some(last_hit_index)
+            Some(next_hit_index)
         } else {
             None
         }

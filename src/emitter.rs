@@ -81,6 +81,10 @@ pub struct RayInteraction {
     pub optical_density_after: f64,
     /// Whether this was a front face hit
     pub front_face: bool,
+    /// The index of the object, which got hit, as reported 
+    pub hit_index: usize,
+    /// The index of the previous object, which got hit, as reported 
+    pub last_hit_index: usize
 }
 
 /// Complete log of a single ray's journey through the scene
@@ -346,6 +350,8 @@ impl Emitter {
                     optical_density_before,
                     optical_density_after: rec.mat.get_optical_density(),
                     front_face: rec.front_face,
+                    last_hit_index: last_hit,
+                    hit_index
                 };
                 
                 // Try to scatter the ray
@@ -559,22 +565,30 @@ impl Emitter {
         let ray_log = &self.ray_logs[ray_index];
         
         println!("=== Ray {} Details ===", ray_index);
-        println!("Origin: ({:.3}, {:.3}, {:.3})", ray_log.origin.x, ray_log.origin.y, ray_log.origin.z);
+        ray_log.print_summary();
+    }
+}
+
+impl RayLog {
+    /// Prints the summary of the RayLog object to stdout
+    pub fn print_summary(& self) {
+        println!("Origin: ({:.3}, {:.3}, {:.3})", self.origin.x, self.origin.y, self.origin.z);
         println!("Initial direction: ({:.3}, {:.3}, {:.3})", 
-                 ray_log.initial_direction.x, ray_log.initial_direction.y, ray_log.initial_direction.z);
-        println!("Final intensity: {:.6}", ray_log.final_intensity);
-        println!("Escaped: {}", ray_log.escaped);
+                 self.initial_direction.x, self.initial_direction.y, self.initial_direction.z);
+        println!("Final intensity: {:.6}", self.final_intensity);
+        println!("Escaped: {}", self.escaped);
         println!("Final point: ({:.3}, {:.3}, {:.3})", 
-                 ray_log.final_point.x, ray_log.final_point.y, ray_log.final_point.z);
+                 self.final_point.x, self.final_point.y, self.final_point.z);
         
-        if ray_log.interactions.is_empty() {
+        if self.interactions.is_empty() {
             println!("No interactions");
         } else {
-            println!("Interactions: {}", ray_log.interactions.len());
-            for (i, interaction) in ray_log.interactions.iter().enumerate() {
+            println!("Interactions: {}", self.interactions.len());
+            for (i, interaction) in self.interactions.iter().enumerate() {
                 println!("  [{}] Hit {} at ({:.3}, {:.3}, {:.3})", 
                          i, interaction.object_name, 
                          interaction.hit_point.x, interaction.hit_point.y, interaction.hit_point.z);
+                println!("      World index: {} to index {}", interaction.last_hit_index, interaction.hit_index);
                 println!("      Material: {}", interaction.material_name);
                 println!("      Front face: {}", interaction.front_face);
                 println!("      Refracted: {}, Reflected: {}", interaction.refracted, interaction.reflected);
