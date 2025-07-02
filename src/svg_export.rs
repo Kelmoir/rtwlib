@@ -18,10 +18,11 @@ use std::path::Path;
 /// # Arguments
 /// * `hittable_list` - The list of hittable objects to export
 /// * `target_file` - The path to save the SVG file to
+/// * 'Option<Emitter> - If an Emitter is provided, then the emitter eill be drawn, otherwise, not.
 /// 
 /// # Returns
 /// Result indicating success or failure of the export
-pub fn export_to_svg(hittable_list: &HittableList, target_file: &Path, normal: Vec3, emitter: &Emitter) -> std::io::Result<()> {
+pub fn export_to_svg(hittable_list: &HittableList, target_file: &Path, normal: Vec3, emitter: Option<&Emitter>) -> std::io::Result<()> {
     // Create SVG header with viewBox
     let mut svg_content = String::from(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -34,7 +35,9 @@ pub fn export_to_svg(hittable_list: &HittableList, target_file: &Path, normal: V
     for object in hittable_list.objects.iter().rev() {
         svg_content.push_str(&object.to_svg(normal));
     }
-    svg_content.push_str(&emitter.to_svg());
+    if let Some(item) = emitter {
+        svg_content.push_str(&item.to_svg());
+    }
 
     // Close SVG tag
     svg_content.push_str("</svg>");
